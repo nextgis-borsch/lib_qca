@@ -55,7 +55,7 @@ add_library(qca-gnupg ${PLUGIN_TYPE} ${QCA_GNUPG_MOC_SOURCES} ${QCA_GNUPG_NONMOC
 if(APPLE AND ${PLUGIN_TYPE} STREQUAL "MODULE")
   set_property(TARGET qca-gnupg PROPERTY SUFFIX ".dylib")
   if(OSX_FRAMEWORK)
-      set_target_properties(qca-gnupg PROPERTIES INSTALL_RPATH "@loader_path/../../Frameworks/") # Library/plugins/crypto/
+      set_target_properties(qca-gnupg PROPERTIES INSTALL_RPATH ${PLUGIN_RPATH}) 
   endif()
 endif()
 

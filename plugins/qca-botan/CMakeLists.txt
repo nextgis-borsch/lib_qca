@@ -16,7 +16,7 @@ if(BOTAN_FOUND)
     set_property(TARGET qca-botan  PROPERTY SUFFIX ".dylib")
 
     if(OSX_FRAMEWORK)
-        set_target_properties(qca-botan PROPERTIES INSTALL_RPATH "@loader_path/../../Frameworks/") # Library/plugins/crypto/
+        set_target_properties(qca-botan PROPERTIES INSTALL_RPATH ${PLUGIN_RPATH}) 
     endif()
   endif()
 

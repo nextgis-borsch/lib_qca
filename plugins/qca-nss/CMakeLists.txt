@@ -19,7 +19,7 @@ if(NSS_FOUND)
   if(APPLE AND ${PLUGIN_TYPE} STREQUAL "MODULE")
     set_property(TARGET qca-nss PROPERTY SUFFIX ".dylib")
     if(OSX_FRAMEWORK)
-        set_target_properties(qca-nss PROPERTIES INSTALL_RPATH "@loader_path/../../Frameworks/") # Library/plugins/crypto/
+        set_target_properties(qca-nss PROPERTIES INSTALL_RPATH ${PLUGIN_RPATH}) 
     endif()
   endif()
 

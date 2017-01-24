@@ -3,6 +3,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/${QCA_LIB_NAME}/cryp
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/${QCA_LIB_NAME}/crypto")
 
 set(PLUGINS "botan;cyrus-sasl;gcrypt;gnupg;logger;nss;ossl;pkcs11;softstore" CACHE INTERNAL "")
+set(PLUGIN_RPATH "@loader_path/../../../Frameworks/") # /plugins/4/crypto
 
 # Initialize WITH_${PLUGIN}_PLUGIN cache variables
 foreach(PLUGIN IN LISTS PLUGINS)
@@ -65,4 +66,3 @@ endforeach(PLUGIN IN LISTS PLUGINS)
 #         MESSAGE(STATUS "WinCrypto plugin enabled")
 #         ADD_SUBDIRECTORY(qca-wincrypto)
 # ENDIF (WIN32)
-

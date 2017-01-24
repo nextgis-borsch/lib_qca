@@ -18,7 +18,7 @@ if(OPENSSL_FOUND AND PKCS11H_FOUND)
   if(APPLE AND ${PLUGIN_TYPE} STREQUAL "MODULE")
     set_property(TARGET qca-pkcs11 PROPERTY SUFFIX ".dylib")
     if(OSX_FRAMEWORK)
-        set_target_properties(qca-pkcs11 PROPERTIES INSTALL_RPATH "@loader_path/../../Frameworks/") # Library/plugins/crypto/
+        set_target_properties(qca-pkcs11 PROPERTIES INSTALL_RPATH ${PLUGIN_RPATH}) 
     endif()
   endif()
 
