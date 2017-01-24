@@ -1,0 +1,37 @@
+if(WITH_nss_PLUGIN STREQUAL "yes")
+  find_package(Nss REQUIRED)
+else(WITH_nss_PLUGIN STREQUAL "yes")
+  find_package(Nss)
+endif(WITH_nss_PLUGIN STREQUAL "yes")
+
+if(NSS_FOUND)
+  enable_plugin("nss")
+
+  set(QCA_NSS_SOURCES qca-nss.cpp)
+  add_definitions(${NSS_CFLAGS_OTHER})
+  include_directories(${NSS_INCLUDE_DIRS})
+  my_automoc( QCA_NSS_SOURCES )
+  add_library(qca-nss ${PLUGIN_TYPE} ${QCA_NSS_SOURCES})
+
+  set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${NSS_LDFLAGS})
+  target_link_extlibraries(qca-nss)
+
+  if(APPLE AND ${PLUGIN_TYPE} STREQUAL "MODULE")
+    set_property(TARGET qca-nss PROPERTY SUFFIX ".dylib")
+    if(OSX_FRAMEWORK)
+        set_target_properties(qca-nss PROPERTIES INSTALL_RPATH "@loader_path/../../Frameworks/") # Library/plugins/crypto/
+    endif()
+  endif()
+
+  if(NOT DEVELOPER_MODE)
+    install(TARGETS qca-nss
+            LIBRARY DESTINATION "${QCA_CRYPTO_INSTALL_DIR}"
+            ARCHIVE DESTINATION "${QCA_CRYPTO_INSTALL_DIR}"
+            RUNTIME DESTINATION "${QCA_CRYPTO_INSTALL_DIR}")
+
+    install_pdb(qca-nss ${QCA_CRYPTO_INSTALL_DIR})
+  endif()
+else(NSS_FOUND)
+  disable_plugin("nss")
+  set(WITH_nss_PLUGIN "no" PARENT_SCOPE)
+endif(NSS_FOUND)
