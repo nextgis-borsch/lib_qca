@@ -17,7 +17,7 @@ endif()
 # Some init settings
 set(CMAKE_COLOR_MAKEFILE ON)
 # Set path to additional CMake modules
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 
 include(util)
 check_version(QCA_LIB_MAJOR_VERSION QCA_LIB_MINOR_VERSION QCA_LIB_PATCH_VERSION)
@@ -54,8 +54,6 @@ string(TOLOWER "${BUILD_PLUGINS}" BUILD_PLUGINS)
 if(NOT BUILD_PLUGINS)
   set(BUILD_PLUGINS "none")
 endif(NOT BUILD_PLUGINS)
-
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" )
 
 option(QT4_BUILD "Force building with Qt4 even if Qt5 is found")
 if (NOT QT4_BUILD)
@@ -398,21 +396,46 @@ endif()
 
 set(QCA_CRYPTO_INSTALL_DIR "${QCA_PLUGINS_INSTALL_DIR}/crypto")
 
+add_subdirectory(src)
+add_subdirectory(plugins)
+
 if(REGISTER_PACKAGE)
+    export(TARGETS ${QCA_LIB_NAME} FILE ${QCA_LIB_NAME}-exports.cmake)
+
+    set(EXPORT_PACKAGE_NAME Qca)
+    set(EXPORT_PACKAGE_NAME_UPPER QCA)
+    set(EXPORT_PACKAGE_LIB_NAME ${QCA_LIB_NAME})
+    set(INSTALL_INC_DIR ${QCA_FULL_INCLUDE_INSTALL_DIR})
+
+    export(PACKAGE ${EXPORT_PACKAGE_NAME})
+
     include(CMakePackageConfigHelpers)
     configure_package_config_file(
-      "${CMAKE_CURRENT_SOURCE_DIR}/QcaConfig.cmake.in"
-      "${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}Config.cmake"
-      INSTALL_DESTINATION ${QCA_LIBRARY_INSTALL_DIR}/cmake/${QCA_CONFIG_NAME_BASE}
+        ${CMAKE_SOURCE_DIR}/cmake/PackageConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/${EXPORT_PACKAGE_NAME}Config.cmake
+        INSTALL_DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+        PATH_VARS QCA_FULL_INCLUDE_INSTALL_DIR )
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/${EXPORT_PACKAGE_NAME}ConfigVersion.cmake
+        VERSION ${VERSION}
+        COMPATIBILITY AnyNewerVersion )
+
+    # For distribution
+    configure_package_config_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/QcaConfig.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}Config.cmake"
+        INSTALL_DESTINATION ${QCA_LIBRARY_INSTALL_DIR}/cmake/${QCA_CONFIG_NAME_BASE}
     )
-    write_basic_config_version_file("${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}ConfigVersion.cmake" VERSION ${QCA_LIB_VERSION_STRING} COMPATIBILITY AnyNewerVersion)
+    write_basic_config_version_file("${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}ConfigVersion.cmake"
+        VERSION ${QCA_LIB_VERSION_STRING}
+        COMPATIBILITY AnyNewerVersion
+    )
 
     set(CMAKE_CONFIG_FILES
         "${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}Config.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}ConfigVersion.cmake"
     )
 
-    set_source_files_properties(${CMAKE_CONFIG_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/cmake")
     set(OSX_RESOURCES ${OSX_RESOURCES} ${CMAKE_CONFIG_FILES})
 
     if(NOT OSX_FRAMEWORK)
@@ -420,10 +443,9 @@ if(REGISTER_PACKAGE)
             DESTINATION ${QCA_LIBRARY_INSTALL_DIR}/cmake/${QCA_CONFIG_NAME_BASE}
         )
     endif()
+else()
+    export(TARGETS ${QCA_LIB_NAME} FILE ${QCA_LIB_NAME}-exports.cmake EXPORT_LINK_INTERFACE_LIBRARIES)
 endif()
-
-add_subdirectory(src)
-add_subdirectory(plugins)
 
 if(STATIC_PLUGINS)
   # Generate header with static plugins list

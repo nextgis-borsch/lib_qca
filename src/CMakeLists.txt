@@ -159,6 +159,7 @@ if(OSX_FRAMEWORK)
     set_source_files_properties("${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/pkgconfig/${QCA_PC_NAME}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/pkgconfig")
     set_source_files_properties("${qca_CERTSTORE}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/certs")
     set_source_files_properties("${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/features")
+    set_source_files_properties("${CMAKE_CONFIG_FILES}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/cmake")
 
     set_target_properties(${QCA_LIB_NAME} PROPERTIES
         DEFINE_SYMBOL QCA_MAKEDLL
