@@ -1,3 +1,13 @@
+################################################################################
+# Project:  QCA library
+# Purpose:  CMake build scripts
+# Author:   Dmitry Baryshnikov, <dmitry.baryshnikov@nextgis.com>
+################################################################################
+# Copyright (C) 2017, NextGIS <info@nextgis.com>
+#
+# Changed script for NextGIS borsch purposes
+################################################################################
+
 # Checking for user explicity defined CMAKE_INSTALL_PREFIX
 # It must be done before project(...)
 if(NOT CMAKE_INSTALL_PREFIX)
