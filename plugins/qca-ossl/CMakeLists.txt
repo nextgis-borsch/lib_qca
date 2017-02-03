@@ -52,11 +52,10 @@ if(OPENSSL_FOUND)
 
   add_library(qca-ossl ${PLUGIN_TYPE} ${QCA_OSSL_SOURCES})
 
-  if(APPLE AND ${PLUGIN_TYPE} STREQUAL "MODULE")
-    set_property(TARGET qca-ossl PROPERTY SUFFIX ".dylib")
-    if(OSX_FRAMEWORK)
-        set_target_properties(qca-ossl PROPERTIES INSTALL_RPATH ${PLUGIN_RPATH}) 
-    endif()
+  if(OSX_FRAMEWORK)
+      set_target_properties(qca-ossl PROPERTIES
+          INSTALL_RPATH ${PLUGIN_RPATH}
+          SUFFIX ".dylib")
   endif()
 
   include_directories(${OPENSSL_INCLUDE_DIR})

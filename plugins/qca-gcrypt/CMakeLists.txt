@@ -22,11 +22,10 @@ if(LIBGCRYPT_FOUND)
     my_automoc(QCA_GCRYPT_SOURCES)
     add_library(qca-gcrypt ${PLUGIN_TYPE} ${QCA_GCRYPT_SOURCES})
 
-    if(APPLE AND ${PLUGIN_TYPE} STREQUAL "MODULE")
-      set_property(TARGET qca-gcrypt PROPERTY SUFFIX ".dylib")
-      if(OSX_FRAMEWORK)
-          set_target_properties(qca-gcrypt PROPERTIES INSTALL_RPATH ${PLUGIN_RPATH}) 
-      endif()
+    if(OSX_FRAMEWORK)
+        set_target_properties(qca-gcrypt PROPERTIES
+            INSTALL_RPATH ${PLUGIN_RPATH}
+            SUFFIX ".dylib")
     endif()
 
     set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${LIBGCRYPT_LIBRARIES})

@@ -16,11 +16,10 @@ if(NSS_FOUND)
   set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${NSS_LDFLAGS})
   target_link_extlibraries(qca-nss)
 
-  if(APPLE AND ${PLUGIN_TYPE} STREQUAL "MODULE")
-    set_property(TARGET qca-nss PROPERTY SUFFIX ".dylib")
-    if(OSX_FRAMEWORK)
-        set_target_properties(qca-nss PROPERTIES INSTALL_RPATH ${PLUGIN_RPATH}) 
-    endif()
+  if(OSX_FRAMEWORK)
+      set_target_properties(qca-nss PROPERTIES
+          INSTALL_RPATH ${PLUGIN_RPATH}
+          SUFFIX ".dylib")
   endif()
 
   if(NOT DEVELOPER_MODE)

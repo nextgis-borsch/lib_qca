@@ -12,12 +12,11 @@ if(SASL2_FOUND)
   my_automoc( QCA_SASL_SOURCES )
   add_library(qca-cyrus-sasl ${PLUGIN_TYPE} ${QCA_SASL_SOURCES})
 
-  if(APPLE AND ${PLUGIN_TYPE} STREQUAL "MODULE")
-    set_property(TARGET qca-cyrus-sasl PROPERTY SUFFIX ".dylib")
     if(OSX_FRAMEWORK)
-        set_target_properties(qca-cyrus-sasl PROPERTIES INSTALL_RPATH ${PLUGIN_RPATH}) 
+        set_target_properties(qca-cyrus-sasl PROPERTIES
+            INSTALL_RPATH ${PLUGIN_RPATH}
+            SUFFIX ".dylib")
     endif()
-  endif()
 
   set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${SASL2_LIBRARIES})
   target_link_extlibraries(qca-cyrus-sasl)

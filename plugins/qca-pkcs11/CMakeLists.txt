@@ -15,12 +15,11 @@ if(OPENSSL_FOUND AND PKCS11H_FOUND)
 
   add_library(qca-pkcs11 ${PLUGIN_TYPE} ${QCA_PKCS11_SOURCES})
 
-  if(APPLE AND ${PLUGIN_TYPE} STREQUAL "MODULE")
-    set_property(TARGET qca-pkcs11 PROPERTY SUFFIX ".dylib")
     if(OSX_FRAMEWORK)
-        set_target_properties(qca-pkcs11 PROPERTIES INSTALL_RPATH ${PLUGIN_RPATH}) 
+        set_target_properties(qca-pkcs11 PROPERTIES
+            INSTALL_RPATH ${PLUGIN_RPATH}
+            SUFFIX ".dylib")
     endif()
-  endif()
 
   add_definitions(${PKCS11H_CFLAGS_OTHER})
   include_directories(${PKCS11H_INCLUDE_DIRS})
