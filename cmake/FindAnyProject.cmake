@@ -29,6 +29,14 @@ set(LINK_SEARCH_PATHS)
 include (CMakeParseArguments)
 
 function(find_anyproject name)
+
+    string(TOUPPER ${name} UPPER_NAME)
+    set(IS_FOUND ${UPPER_NAME}_FOUND)
+    set(VERSION_STRING ${UPPER_NAME}_VERSION_STRING)
+    if(NOT DEFINED ${IS_FOUND}) #if the package was found anywhere
+        set(${IS_FOUND} FALSE)
+    endif()
+
     set(options OPTIONAL REQUIRED QUIET EXACT MODULE)
     set(oneValueArgs DEFAULT VERSION SHARED)
     set(multiValueArgs CMAKE_ARGS COMPONENTS)
@@ -56,13 +64,6 @@ function(find_anyproject name)
         set(WITHOPT "${WITHOPT}option(WITH_${name}_EXTERNAL \"Set ON to use external ${name}\" OFF)\n")
         option(WITH_${name} "Set ON to use ${name}" ${_WITH_OPTION_ON})
     endif()
-
-    string(TOUPPER ${name}_FOUND IS_FOUND)
-    string(TOUPPER ${name}_VERSION_STRING VERSION_STRING)
-    if(NOT DEFINED ${IS_FOUND}) #if the package was found anywhere
-        set(${IS_FOUND} FALSE)
-    endif()
-    string(TOUPPER ${name} UPPER_NAME)
 
     write_ext_options(find_anyproject_SHARED)
 
@@ -93,11 +94,37 @@ function(find_anyproject name)
             endif()
 
             find_package(${name} ${FIND_PROJECT_ARG} CONFIG QUIET)
-            if(${IS_FOUND})
-                message(STATUS "Found ${name} in package repository: ${${UPPER_NAME}_LIBRARY} (found version \"${${UPPER_NAME}_VERSION}\")")
+            if(${name}_FOUND AND (${name}_RUN_IN_MODULE_MODE OR ${UPPER_NAME}_RUN_IN_MODULE_MODE))
+                find_package(${name} ${FIND_PROJECT_ARG} MODULE QUIET)
+            endif()
+            if(${name}_FOUND)
+                set(FOUND_WITH_CONFIG_MODE TRUE)
             else()
                 message(STATUS "Not found ${name} in packages. Try look in system.")
                 find_package(${name} ${FIND_PROJECT_ARG})
+            endif()
+
+            if(DEFINED ${name}_FOUND)
+                set(${UPPER_NAME}_FOUND ${${name}_FOUND})
+            endif()
+            if(DEFINED ${name}_VERSION_STRING)
+                set(${UPPER_NAME}_VERSION_STRING ${${name}_VERSION_STRING})
+            endif()
+            if(DEFINED ${name}_INCLUDE_DIRS)
+                set(${UPPER_NAME}_INCLUDE_DIRS ${${name}_INCLUDE_DIRS})
+            endif()
+            if(DEFINED ${name}_INCLUDE_DIR)
+                set(${UPPER_NAME}_INCLUDE_DIR ${${name}_INCLUDE_DIR})
+            endif()
+            if(DEFINED ${name}_LIBRARIES)
+                set(${UPPER_NAME}_LIBRARIES ${${name}_LIBRARIES})
+            endif()
+            if(DEFINED ${name}_LIBRARY)
+                set(${UPPER_NAME}_LIBRARY ${${name}_LIBRARY})
+            endif()
+
+            if(FOUND_WITH_CONFIG_MODE)
+                message(STATUS "Found ${name} in package repository: ${${UPPER_NAME}_LIBRARY} (found version \"${${UPPER_NAME}_VERSION}\")")
             endif()
         endif()
 
@@ -122,10 +149,11 @@ function(find_anyproject name)
                 set(${UPPER_NAME}_VERSION_STR ${${UPPER_NAME}_VERSION} CACHE INTERNAL "library ${name} version")
             endif()
 
-            mark_as_advanced(${IS_FOUND} ${UPPER_NAME}_INCLUDE_DIR
+            mark_as_advanced(${IS_FOUND}
+                ${UPPER_NAME}_INCLUDE_DIR
                 ${UPPER_NAME}_INCLUDE_DIRS
-                ${UPPER_NAME}_LIBRARIES
                 ${UPPER_NAME}_LIBRARY
+                ${UPPER_NAME}_LIBRARIES
                 ${UPPER_NAME}_VERSION
                 ${UPPER_NAME}_VERSION_STR
             )
@@ -197,9 +225,6 @@ function(find_anyproject name)
             set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${${name}_LIBRARIES} PARENT_SCOPE)
         elseif(${name}_LIBRARY)
             set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${${name}_LIBRARY} PARENT_SCOPE)
-        elseif(${UPPER_NAME}_VERSION)
-            set(${UPPER_NAME}_VERSION ${${UPPER_NAME}_VERSION} PARENT_SCOPE)
-            set(${UPPER_NAME}_VERSION_STR ${${UPPER_NAME}_VERSION} PARENT_SCOPE)
         endif()
     else()
         set(TARGET_LINK_LIB ${TARGET_LINK_LIB} PARENT_SCOPE)
