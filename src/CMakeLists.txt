@@ -180,6 +180,15 @@ if(NOT ANDROID)
                         )
 endif()
 
+if (WIN32)
+    set_target_properties(${QCA_LIB_NAME} PROPERTIES
+                      DEFINE_SYMBOL QCA_MAKEDLL
+                      PUBLIC_HEADER "${public_HEADERS}"
+                      FRAMEWORK FALSE
+                      EXPORT_NAME ${QCA_LIB_NAME}
+                      )
+endif()
+
 if(NOT DEVELOPER_MODE)
   # Do not split 'PUBLIC_HEADER ...' line. It means install headers to folder
   # and set this folder as -I flag for imported target.
@@ -193,3 +202,4 @@ if(NOT DEVELOPER_MODE)
   )
   install_pdb(${QCA_LIB_NAME} ${QCA_BINARY_INSTALL_DIR})
 endif()
+
