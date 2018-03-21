@@ -405,10 +405,10 @@ set( qca_HEADERS ${private_HEADERS} ${public_HEADERS} )
 
 include_directories(${QT_QTCORE_INCLUDE_DIR} "${qca_INCLUDEDIR}/QtCrypto")
 
-# configure_file("crypto.prf.cmake" "${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" @ONLY)
-# if(NOT DEVELOPER_MODE)
-#   install(FILES "${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" DESTINATION "${QCA_FEATURE_INSTALL_DIR}")
-# endif()
+configure_file("crypto.prf.cmake" "${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" @ONLY)
+if(NOT DEVELOPER_MODE AND NOT OSX_FRAMEWORK)
+  install(FILES "${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" DESTINATION "${QCA_FEATURE_INSTALL_DIR}")
+endif()
 
 configure_file(man/qcatool.1 "${CMAKE_BINARY_DIR}/share/man/man1/${QCA_TOOL_NAME}.1" COPYONLY)
 if(NOT DEVELOPER_MODE AND NOT OSX_FRAMEWORK)
