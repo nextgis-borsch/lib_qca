@@ -3,10 +3,11 @@
 if(WITH_ossl_PLUGIN STREQUAL "yes")
   find_anyproject(OpenSSL REQUIRED)
 else()
-  find_anyproject(OpenSSL DEFAULT OFF) # Not supported OpenSSL API 1.1 yet
+  find_anyproject(OpenSSL DEFAULT OFF)
 endif()
 
 if(OPENSSL_FOUND)
+    set(OPENSSL_INCLUDE_DIR ${OPENSSL_INCLUDE_DIRS} CACHE INTERNAL "" FORCE)
   enable_plugin("ossl")
 
   include(CheckFunctionExists)

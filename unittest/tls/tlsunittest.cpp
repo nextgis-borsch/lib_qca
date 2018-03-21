@@ -60,16 +60,22 @@ void TLSUnitTest::testCipherList()
 	QCA::TLS *tls = new QCA::TLS(QCA::TLS::Stream, 0, "qca-ossl");
 	QStringList cipherList = tls->supportedCipherSuites(QCA::TLS::TLS_v1);
 	QVERIFY( cipherList.contains("TLS_DHE_RSA_WITH_AES_256_CBC_SHA") );
-	QVERIFY( cipherList.contains("TLS_DHE_DSS_WITH_AES_256_CBC_SHA") );
 	QVERIFY( cipherList.contains("TLS_RSA_WITH_AES_256_CBC_SHA") );
-	QVERIFY( cipherList.contains("TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA") );
-	QVERIFY( cipherList.contains("TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA") );
-	QVERIFY( cipherList.contains("TLS_RSA_WITH_3DES_EDE_CBC_SHA") );
 	QVERIFY( cipherList.contains("TLS_DHE_RSA_WITH_AES_128_CBC_SHA") );
-	QVERIFY( cipherList.contains("TLS_DHE_DSS_WITH_AES_128_CBC_SHA") );
-	QVERIFY( cipherList.contains("TLS_RSA_WITH_AES_128_CBC_SHA") );
-	QVERIFY( cipherList.contains("TLS_RSA_WITH_RC4_128_SHA") );
-	QVERIFY( cipherList.contains("TLS_RSA_WITH_RC4_128_MD5") );
+
+	// openSUSE TW OpenSSL 1.1 does not have this
+	// QVERIFY( cipherList.contains("TLS_DHE_DSS_WITH_AES_256_CBC_SHA") );
+	// QVERIFY( cipherList.contains("TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA") );
+	// QVERIFY( cipherList.contains("TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA") );
+	// QVERIFY( cipherList.contains("TLS_RSA_WITH_3DES_EDE_CBC_SHA") );
+	// QVERIFY( cipherList.contains("TLS_RSA_WITH_AES_128_CBC_SHA") );
+	// QVERIFY( cipherList.contains("TLS_DHE_DSS_WITH_AES_128_CBC_SHA") );
+
+	// Fedora 26 openssl has no this cipher suites.
+	// QVERIFY( cipherList.contains("TLS_RSA_WITH_RC4_128_SHA") );
+	// QVERIFY( cipherList.contains("TLS_RSA_WITH_RC4_128_MD5") );
+	// QVERIFY( cipherList.contains("SSL_RSA_WITH_RC4_128_SHA") );
+	// QVERIFY( cipherList.contains("SSL_RSA_WITH_RC4_128_MD5") );
 
 	// Fedora 20 openssl has no this cipher suites.
 	// I just believe that F20 has the most strict patent rules
@@ -85,18 +91,17 @@ void TLSUnitTest::testCipherList()
 	// QVERIFY( cipherList.contains("TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5") );
 	// QVERIFY( cipherList.contains("TLS_RSA_EXPORT_WITH_RC4_40_MD5") );
 
-	cipherList = tls->supportedCipherSuites(QCA::TLS::SSL_v3);
-	QVERIFY( cipherList.contains("SSL_DHE_RSA_WITH_AES_256_CBC_SHA") );
-	QVERIFY( cipherList.contains("SSL_DHE_DSS_WITH_AES_256_CBC_SHA") );
-	QVERIFY( cipherList.contains("SSL_RSA_WITH_AES_256_CBC_SHA") );
-	QVERIFY( cipherList.contains("SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA") );
-	QVERIFY( cipherList.contains("SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA") );
-	QVERIFY( cipherList.contains("SSL_RSA_WITH_3DES_EDE_CBC_SHA") );
-	QVERIFY( cipherList.contains("SSL_DHE_RSA_WITH_AES_128_CBC_SHA") );
-	QVERIFY( cipherList.contains("SSL_DHE_DSS_WITH_AES_128_CBC_SHA") );
-	QVERIFY( cipherList.contains("SSL_RSA_WITH_AES_128_CBC_SHA") );
-	QVERIFY( cipherList.contains("SSL_RSA_WITH_RC4_128_SHA") );
-	QVERIFY( cipherList.contains("SSL_RSA_WITH_RC4_128_MD5") );
+	// OpenSSL 1.1 in openSUSE TW has it disabled by default
+	// cipherList = tls->supportedCipherSuites(QCA::TLS::SSL_v3);
+	// QVERIFY( cipherList.contains("SSL_DHE_RSA_WITH_AES_256_CBC_SHA") );
+	// QVERIFY( cipherList.contains("SSL_DHE_DSS_WITH_AES_256_CBC_SHA") );
+	// QVERIFY( cipherList.contains("SSL_RSA_WITH_AES_256_CBC_SHA") );
+	// QVERIFY( cipherList.contains("SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA") );
+	// QVERIFY( cipherList.contains("SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA") );
+	// QVERIFY( cipherList.contains("SSL_RSA_WITH_3DES_EDE_CBC_SHA") );
+	// QVERIFY( cipherList.contains("SSL_DHE_RSA_WITH_AES_128_CBC_SHA") );
+	// QVERIFY( cipherList.contains("SSL_DHE_DSS_WITH_AES_128_CBC_SHA") );
+	// QVERIFY( cipherList.contains("SSL_RSA_WITH_AES_128_CBC_SHA") );
 
 	// QVERIFY( cipherList.contains("SSL_DHE_RSA_WITH_DES_CBC_SHA") );
 	// QVERIFY( cipherList.contains("SSL_DHE_DSS_WITH_DES_CBC_SHA") );

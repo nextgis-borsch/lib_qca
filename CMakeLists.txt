@@ -36,12 +36,12 @@ report_version(${PROJECT_NAME} ${VERSION})
 
 if(OSX_FRAMEWORK)
     set(FRAMEWORK_VERSION "${QCA_LIB_MAJOR_VERSION}")
+    set(CMAKE_MACOSX_RPATH ON)
 endif()
 
-# Do not automatically link Qt executables to qtmain target on Windows.
-# QCA exucatables use console mode only. Not need to link against
-# qtmain.lib.
-cmake_policy(SET CMP0020 OLD)
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 OLD)
+endif()
 
 option(BUILD_TESTS "Create test" ON)
 option(BUILD_TOOLS "Compile mozcerts and qcatool" ON)
@@ -65,37 +65,48 @@ if(NOT BUILD_PLUGINS)
   set(BUILD_PLUGINS "none")
 endif(NOT BUILD_PLUGINS)
 
+# set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" )
+
 option(QT4_BUILD "Force building with Qt4 even if Qt5 is found")
 if (NOT QT4_BUILD)
-  find_package(Qt5Core QUIET)
+  # Do not automatically link Qt executables to qtmain target on Windows.
+  # QCA exucatables use console mode only. Not need to link against qtmain.lib.
+  set(Qt5_NO_LINK_QTMAIN ON)
+  find_anyproject(Qt5Core QUIET)
   mark_as_advanced(Qt5Core_DIR)
 endif()
 
 include(QcaMacro)
+include(GNUInstallDirs)
 
 if (Qt5Core_FOUND)
   message(STATUS "Building with Qt5 support")
   # Got from ECM
   # Distros have no ECM. So I just copied required cmake modules.
-  find_package(Qt5Transitional REQUIRED Core Network)
+  find_package(Qt5Transitional REQUIRED COMPONENTS Core Network)
   include(ECMQt4To5Porting)
 
-  include(GNUInstallDirs)
+  # include(GNUInstallDirs)
   setup_qt5_dirs()
   set(QCA_QT_PC_VERSION "Qt5Core")
   set(QCA_SUFFIX "qt5")
 else()
   set(QT_MIN_VERSION "4.7.0")
   set(QT_USE_IMPORTED_TARGETS ON)
+  # Do not automatically link Qt executables to qtmain target on Windows.
+  # QCA exucatables use console mode only. Not need to link against qtmain.lib.
+  set(QT4_NO_LINK_QTMAIN ON)
   if(BUILD_TESTS)
-    set(QT4_NEED_COMPONENTS QtCore QtNetwork QtTest)
+    find_anyproject(Qt4 REQUIRED COMPONENTS QtCore QtNetwork QtTest)
   else(BUILD_TESTS)
-    set(QT4_NEED_COMPONENTS QtCore)
+    find_anyproject(Qt4 REQUIRED COMPONENTS QtCore)
   endif(BUILD_TESTS)
+  # WORKAROUND: Seems it must be done in Qt4 find module but didn't
+  mark_as_advanced(QT_QMAKE_EXECUTABLE)
 
-  find_anyproject(Qt4 REQUIRED COMPONENTS ${QT4_NEED_COMPONENTS})
-
-#  setup_qt4_dirs()
+  # properly set up compile flags (QT_DEBUG/QT_NO_DEBUG, ...)
+  # include(${QT_USE_FILE})
+  # setup_qt4_dirs()
   set(QCA_QT_PC_VERSION "QtCore")
 endif()
 
@@ -196,40 +207,43 @@ if( QCA_INSTALL_IN_QT_PREFIX )
   endif()
   set(QCA_DOC_INSTALL_DIR "${QT_DOC_DIR}/html/qca/" CACHE PATH "Directory where qca documentation will install")
   set(QCA_MAN_INSTALL_DIR "${QT_DATA_DIR}/man" CACHE PATH "Directory where qca man pages will install")
-elseif(OSX_FRAMEWORK)
-    set(QCA_PREFIX_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Directory where qca will install")
-    if(QT4_FOUND)
-        set(QCA_PLUGINS_INSTALL_DIR "${QCA_PREFIX_INSTALL_DIR}/Library/plugins/Qt4" CACHE PATH "Directory where qca plugins will install")
-    else()
-        set(QCA_PLUGINS_INSTALL_DIR "${QCA_PREFIX_INSTALL_DIR}/Library/plugins/Qt5" CACHE PATH "Directory where qca plugins will install")
-    endif()
-    set(QCA_BINARY_INSTALL_DIR "${QCA_PREFIX_INSTALL_DIR}/bin" CACHE PATH "Directory where qca plugins will install")
-    set(QCA_LIBRARY_INSTALL_DIR "${QCA_PREFIX_INSTALL_DIR}/Library/Frameworks/" CACHE PATH "Directory where qca library will install")
-    set(QCA_FEATURE_INSTALL_DIR "${QCA_PREFIX_INSTALL_DIR}/Library/Frameworks/${QCA_LIB_NAME}.framework/Versions/${FRAMEWORK_VERSION}/Resources/features" CACHE PATH "Directory where qca feature file will install")
-    set(QCA_INCLUDE_INSTALL_DIR "${QCA_PREFIX_INSTALL_DIR}/Library/Frameworks/${QCA_LIB_NAME}.framework/Headers" CACHE PATH "Directory where qca public headers will install")
-    set(QCA_DOC_INSTALL_DIR "${QCA_PREFIX_INSTALL_DIR}/Library/Frameworks/${QCA_LIB_NAME}.framework/Versions/${FRAMEWORK_VERSION}/Resources/html/qca/" CACHE PATH "Directory where qca documentation will install")
-    set(QCA_MAN_INSTALL_DIR "${QCA_PREFIX_INSTALL_DIR}/Library/Frameworks/${QCA_LIB_NAME}.framework/Versions/${FRAMEWORK_VERSION}/Resources/man" CACHE PATH "Directory where qca man pages will install")
-else()
+else( QCA_INSTALL_IN_QT_PREFIX )
   # Cmake says nothing about LIB_SUFFIX
   # de facto it is a standard way to specify lib suffix on many distros
-  set(LIB_SUFFIX "" CACHE STRING "Define suffix of directory name (32/64)" )
-  set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}" CACHE PATH "Directory where lib will install")
-
+  # set(LIB_SUFFIX "" CACHE STRING "Define suffix of directory name (32/64)" )
+  # set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}" CACHE PATH "Directory where lib will install")
+  if(OSX_FRAMEWORK)
+      set(LIB_INSTALL_DIR "Library/Frameworks" CACHE PATH "Directory where lib will install")
+  else()
+      set(LIB_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}" CACHE PATH "Directory where lib will install")
+  endif()
   set(QCA_PREFIX_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Directory where qca will install")
   set(QCA_PLUGINS_INSTALL_DIR "${LIB_INSTALL_DIR}/${QCA_LIB_NAME}" CACHE PATH "Directory where qca plugins will install")
-  set(QCA_BINARY_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/bin" CACHE PATH "Directory where qca plugins will install")
+  # set(QCA_BINARY_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/bin" CACHE PATH "Directory where qca plugins will install")
+  if(OSX_FRAMEWORK)
+      set(QCA_BINARY_INSTALL_DIR "bin" CACHE PATH "Directory where qca plugins will install")
+  else()
+      set(QCA_BINARY_INSTALL_DIR "${CMAKE_INSTALL_BINDIR}" CACHE PATH "Directory where qca plugins will install")
+  endif()
   set(QCA_LIBRARY_INSTALL_DIR "${LIB_INSTALL_DIR}" CACHE PATH "Directory where qca library will install")
   set(QCA_FEATURE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/mkspecs/features" CACHE PATH "Directory where qca feature file will install")
-  if(NOT QCA_SUFFIX)
-    set(QCA_INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include" CACHE PATH "Directory where qca public headers will install")
-    set(QCA_PRIVATE_INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include" CACHE PATH "Directory where qca headers will install")
+  # if(NOT QCA_SUFFIX)
+  #   set(QCA_INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include" CACHE PATH "Directory where qca public headers will install")
+  #   set(QCA_PRIVATE_INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include" CACHE PATH "Directory where qca headers will install")
+  # else()
+  #   set(QCA_INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/${QCA_CONFIG_NAME_BASE}" CACHE PATH "Directory where qca public headers will install")
+  #   set(QCA_PRIVATE_INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/${QCA_CONFIG_NAME_BASE}" CACHE PATH "Directory where qca headers will install")
+  # endif()
+  if(OSX_FRAMEWORK)
+        set(QCA_INCLUDE_INSTALL_DIR ${QCA_LIBRARY_INSTALL_DIR}/${QCA_LIB_NAME}.framework/Headers CACHE PATH "Directory where qca public headers will install")
+        set(QCA_PRIVATE_INCLUDE_INSTALL_DIR ${QCA_LIBRARY_INSTALL_DIR}/${QCA_LIB_NAME}.framework/Headers CACHE PATH "Directory where qca headers will install")
   else()
-    set(QCA_INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/${QCA_CONFIG_NAME_BASE}" CACHE PATH "Directory where qca public headers will install")
-    set(QCA_PRIVATE_INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/include/${QCA_CONFIG_NAME_BASE}" CACHE PATH "Directory where qca headers will install")
+        set(QCA_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} CACHE PATH "Directory where qca public headers will install")
+        set(QCA_PRIVATE_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} CACHE PATH "Directory where qca headers will install")
   endif()
   set(QCA_DOC_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/share/doc/${QCA_LIB_NAME}/html" CACHE PATH "Directory where qca documentation will install")
   set(QCA_MAN_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/share/man" CACHE PATH "Directory where qca man pages will install")
-endif()
+endif( QCA_INSTALL_IN_QT_PREFIX )
 
 set(PKGCONFIG_INSTALL_PREFIX "${QCA_LIBRARY_INSTALL_DIR}/pkgconfig" CACHE PATH "Base directory for pkgconfig files")
 
@@ -237,34 +251,34 @@ normalize_path(QCA_PREFIX_INSTALL_DIR)
 
 if(OSX_FRAMEWORK)
   set(QCA_FULL_INCLUDE_INSTALL_DIR "${QCA_LIBRARY_INSTALL_DIR}/${QCA_LIB_NAME}.framework/Headers")
+  set(INSTALL_CMAKECONF_DIR ${QCA_LIBRARY_INSTALL_DIR}/${QCA_LIB_NAME}.framework/Resources/CMake CACHE INTERNAL "Installation directory for cmake config files" FORCE)
 else()
   set(QCA_FULL_INCLUDE_INSTALL_DIR "${QCA_INCLUDE_INSTALL_DIR}/QtCrypto")
+  set(INSTALL_CMAKECONF_DIR ${CMAKE_INSTALL_DATADIR}/${QCA_LIB_NAME}/CMake CACHE INTERNAL "Installation directory for cmake config files" FORCE)
 endif()
 
-# check for oportunity to use relative paths
-option(USE_RELATIVE_PATHS "Try to make relocatable package")
-
-foreach(PATH QCA_PLUGINS_INSTALL_DIR
-             QCA_BINARY_INSTALL_DIR
-             QCA_LIBRARY_INSTALL_DIR
-             QCA_FEATURE_INSTALL_DIR
-             QCA_INCLUDE_INSTALL_DIR
-             QCA_PRIVATE_INCLUDE_INSTALL_DIR
-             QCA_DOC_INSTALL_DIR
-             QCA_MAN_INSTALL_DIR
-             PKGCONFIG_INSTALL_PREFIX)
-
-  # Normalize path before comparsion
-  normalize_path(${PATH})
-
-  # if all paths are subdirs of CMAKE_INSTALL_PREFIX it is possible to use relative paths
-  string(FIND "${${PATH}}" "${QCA_PREFIX_INSTALL_DIR}/" POS)
-  if(NOT "${POS}" STREQUAL "0")
-    set(USE_RELATIVE_PATHS OFF)
-  endif()
-endforeach()
-
-set(OSX_RESOURCES)
+# # check for oportunity to use relative paths
+# option(USE_RELATIVE_PATHS "Try to make relocatable package")
+#
+# foreach(PATH QCA_PLUGINS_INSTALL_DIR
+#              QCA_BINARY_INSTALL_DIR
+#              QCA_LIBRARY_INSTALL_DIR
+#              QCA_FEATURE_INSTALL_DIR
+#              QCA_INCLUDE_INSTALL_DIR
+#              QCA_PRIVATE_INCLUDE_INSTALL_DIR
+#              QCA_DOC_INSTALL_DIR
+#              QCA_MAN_INSTALL_DIR
+#              PKGCONFIG_INSTALL_PREFIX)
+#
+#   # Normalize path before comparsion
+#   normalize_path(${PATH})
+#
+#   # if all paths are subdirs of CMAKE_INSTALL_PREFIX it is possible to use relative paths
+#   string(FIND "${${PATH}}" "${QCA_PREFIX_INSTALL_DIR}/" POS)
+#   if(NOT "${POS}" STREQUAL "0")
+#     set(USE_RELATIVE_PATHS OFF)
+#   endif()
+# endforeach()
 
 if(NOT WIN32)
   if(OSX_FRAMEWORK)
@@ -277,9 +291,7 @@ if(NOT WIN32)
 
   # qca2.pc uses absolute paths. So it must be there. Don't rellocate this.
   configure_file("qca2.pc.cmake" "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/pkgconfig/${QCA_PC_NAME}" @ONLY)
-  if(OSX_FRAMEWORK)
-    set(OSX_RESOURCES ${OSX_RESOURCES} "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/pkgconfig/${QCA_PC_NAME}")
-  elseif(NOT DEVELOPER_MODE)
+  if(NOT DEVELOPER_MODE)
     install(FILES "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/pkgconfig/${QCA_PC_NAME}" DESTINATION ${PKGCONFIG_INSTALL_PREFIX})
   endif()
 endif(NOT WIN32)
@@ -354,9 +366,7 @@ else (qca_CERTSTORE)
   message(STATUS "Using built in certstore.")
   set( qca_CERTSTORE "${CMAKE_CURRENT_SOURCE_DIR}/certs/rootcerts.pem")
   # note that INSTALL_FILES targets are relative to the current installation prefix...
-  if(OSX_FRAMEWORK)
-    set(OSX_RESOURCES ${OSX_RESOURCES} ${qca_CERTSTORE})
-  elseif(NOT DEVELOPER_MODE)
+  if(NOT DEVELOPER_MODE)
     install(FILES "${qca_CERTSTORE}" DESTINATION "${QCA_PREFIX_INSTALL_DIR}/certs")
   endif()
 endif (qca_CERTSTORE)
@@ -390,71 +400,34 @@ set( qca_HEADERS ${private_HEADERS} ${public_HEADERS} )
 include_directories(${QT_QTCORE_INCLUDE_DIR} "${qca_INCLUDEDIR}/QtCrypto")
 
 configure_file("crypto.prf.cmake" "${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" @ONLY)
-if(OSX_FRAMEWORK)
-    set(OSX_RESOURCES ${OSX_RESOURCES} ${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf)
-elseif(NOT DEVELOPER_MODE)
+if(NOT DEVELOPER_MODE)
   install(FILES "${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" DESTINATION "${QCA_FEATURE_INSTALL_DIR}")
 endif()
 
 configure_file(man/qcatool.1 "${CMAKE_BINARY_DIR}/share/man/man1/${QCA_TOOL_NAME}.1" COPYONLY)
-if(OSX_FRAMEWORK)
-#    set_property(SOURCE ${CMAKE_BINARY_DIR}/share/man/man1/${QCA_TOOL_NAME}.1 PROPERTY MACOSX_PACKAGE_LOCATION "Resources/man/man1/${QCA_TOOL_NAME}.1")
-#    set(OSX_RESOURCES ${OSX_RESOURCES} ${CMAKE_BINARY_DIR}/share/man/man1/${QCA_TOOL_NAME}.1)
-elseif(NOT DEVELOPER_MODE)
+if(NOT DEVELOPER_MODE)
   install(FILES "${CMAKE_BINARY_DIR}/share/man/man1/${QCA_TOOL_NAME}.1" DESTINATION "${QCA_MAN_INSTALL_DIR}/man1")
 endif()
 
 set(QCA_CRYPTO_INSTALL_DIR "${QCA_PLUGINS_INSTALL_DIR}/crypto")
 
+set(PACKAGE_NAME ${PROJECT_NAME})
+string(TOUPPER ${PACKAGE_NAME} PACKAGE_UPPER_NAME)
+
+################################################################################
+if(REGISTER_PACKAGE)
+    # Export the package for use from the build-tree
+    # (this registers the build-tree with a global CMake-registry)
+    export(PACKAGE ${PACKAGE_UPPER_NAME})
+endif()
+
+# Create the <Package>Config.cmake file
+configure_file(cmake/PackageConfig.cmake.in
+    ${PROJECT_BINARY_DIR}/${PACKAGE_UPPER_NAME}Config.cmake @ONLY)
+################################################################################
+
 add_subdirectory(src)
 add_subdirectory(plugins)
-
-if(REGISTER_PACKAGE)
-    export(TARGETS ${QCA_LIB_NAME} FILE ${QCA_LIB_NAME}-exports.cmake)
-
-    set(EXPORT_PACKAGE_NAME Qca)
-    string(TOUPPER ${EXPORT_PACKAGE_NAME} EXPORT_PACKAGE_NAME_UPPER)
-    set(EXPORT_PACKAGE_LIB_NAME ${QCA_LIB_NAME})
-    set(INSTALL_INC_DIR ${QCA_FULL_INCLUDE_INSTALL_DIR})
-
-    export(PACKAGE ${EXPORT_PACKAGE_NAME})
-
-    include(CMakePackageConfigHelpers)
-    configure_package_config_file(
-        ${CMAKE_SOURCE_DIR}/cmake/PackageConfig.cmake.in
-        ${CMAKE_CURRENT_BINARY_DIR}/${EXPORT_PACKAGE_NAME}Config.cmake
-        INSTALL_DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
-    write_basic_package_version_file(
-        ${CMAKE_CURRENT_BINARY_DIR}/${EXPORT_PACKAGE_NAME}ConfigVersion.cmake
-        VERSION ${VERSION}
-        COMPATIBILITY AnyNewerVersion )
-
-    # For distribution
-    configure_package_config_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/QcaConfig.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}Config.cmake"
-        INSTALL_DESTINATION ${QCA_LIBRARY_INSTALL_DIR}/cmake/${QCA_CONFIG_NAME_BASE}
-    )
-    write_basic_config_version_file("${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}ConfigVersion.cmake"
-        VERSION ${QCA_LIB_VERSION_STRING}
-        COMPATIBILITY AnyNewerVersion
-    )
-
-    set(CMAKE_CONFIG_FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}Config.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}ConfigVersion.cmake"
-    )
-
-    set(OSX_RESOURCES ${OSX_RESOURCES} ${CMAKE_CONFIG_FILES})
-
-    if(NOT OSX_FRAMEWORK)
-        install(FILES ${CMAKE_CONFIG_FILES}
-            DESTINATION ${QCA_LIBRARY_INSTALL_DIR}/cmake/${QCA_CONFIG_NAME_BASE}
-        )
-    endif()
-else()
-    export(TARGETS ${QCA_LIB_NAME} FILE ${QCA_LIB_NAME}-exports.cmake EXPORT_LINK_INTERFACE_LIBRARIES)
-endif()
 
 if(STATIC_PLUGINS)
   # Generate header with static plugins list
@@ -470,7 +443,7 @@ endif(STATIC_PLUGINS)
 if(BUILD_TESTS)
   enable_testing()
   add_subdirectory(unittest)
-  add_subdirectory(examples)
+  # add_subdirectory(examples)
 endif(BUILD_TESTS)
 if(BUILD_TOOLS)
   add_subdirectory(tools)
@@ -486,6 +459,14 @@ if(DOXYGEN_FOUND)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Generating API documentation with Doxygen" VERBATIM)
 endif(DOXYGEN_FOUND)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/QcaConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}Config.cmake"
+  INSTALL_DESTINATION ${QCA_LIBRARY_INSTALL_DIR}/cmake/${QCA_CONFIG_NAME_BASE}
+)
+write_basic_config_version_file("${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}ConfigVersion.cmake" VERSION ${QCA_LIB_VERSION_STRING} COMPATIBILITY AnyNewerVersion)
 
 if(NOT DEVELOPER_MODE)
 
@@ -553,6 +534,40 @@ if(NOT DEVELOPER_MODE)
     endif()
   endif()
 
-  install(EXPORT ${QCA_CONFIG_NAME_BASE}Targets DESTINATION ${QCA_LIBRARY_INSTALL_DIR}/cmake/${QCA_CONFIG_NAME_BASE} FILE ${QCA_CONFIG_NAME_BASE}Targets.cmake)
+  # install(EXPORT ${QCA_CONFIG_NAME_BASE}Targets DESTINATION ${QCA_LIBRARY_INSTALL_DIR}/cmake/${QCA_CONFIG_NAME_BASE} FILE ${QCA_CONFIG_NAME_BASE}Targets.cmake)
+  # install(FILES
+  #   "${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}Config.cmake"
+  #   "${CMAKE_CURRENT_BINARY_DIR}/lib/cmake/${QCA_CONFIG_NAME_BASE}/${QCA_CONFIG_NAME_BASE}ConfigVersion.cmake"
+  #   DESTINATION ${QCA_LIBRARY_INSTALL_DIR}/cmake/${QCA_CONFIG_NAME_BASE}
+  #   )
+endif()
 
+
+# Archiving ====================================================================
+
+get_cpack_filename(${VERSION} PROJECT_CPACK_FILENAME)
+
+if(NOT DEFINED PACKAGE_VENDOR)
+    set(PACKAGE_VENDOR NextGIS)
+endif()
+
+if(NOT DEFINED PACKAGE_BUGREPORT)
+    set(PACKAGE_BUGREPORT info@nextgis.com)
+endif()
+
+
+if(NOT CREATE_CPACK_LIGHT)
+    set(CPACK_PACKAGE_NAME "${PACKAGE_NAME}")
+    set(CPACK_PACKAGE_VENDOR "${PACKAGE_VENDOR}")
+    set(CPACK_PACKAGE_VERSION "${VERSION}")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PACKAGE_NAME} Installation")
+    set(CPACK_PACKAGE_RELOCATABLE TRUE)
+    set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
+    set(CPACK_GENERATOR "ZIP")
+    set(CPACK_MONOLITHIC_INSTALL ON)
+    set(CPACK_STRIP_FILES TRUE)
+
+    set(CPACK_PACKAGE_FILE_NAME ${PROJECT_CPACK_FILENAME})
+
+    include (CPack)
 endif()

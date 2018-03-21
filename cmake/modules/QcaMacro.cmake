@@ -25,10 +25,10 @@ IF (Qt5Core_FOUND)
 ELSE (Qt5Core_FOUND)
   # Cmake FindQt4 module doesn't provide QT_INSTALL_PREFIX and QT_INSTALL_DATA vars
   # It will be done here
-  MACRO(SETUP_QT4_DIRS)
-    _qt4_query_qmake(QT_INSTALL_PREFIX QT_PREFIX_DIR)
-    _qt4_query_qmake(QT_INSTALL_DATA QT_DATA_DIR)
-  ENDMACRO(SETUP_QT4_DIRS)
+  # MACRO(SETUP_QT4_DIRS)
+  #   _qt4_query_qmake(QT_INSTALL_PREFIX QT_PREFIX_DIR)
+  #   _qt4_query_qmake(QT_INSTALL_DATA QT_DATA_DIR)
+  # ENDMACRO(SETUP_QT4_DIRS)
 ENDIF()
 
 MACRO(MY_AUTOMOC _srcsList)

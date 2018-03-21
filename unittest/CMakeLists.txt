@@ -6,6 +6,12 @@ if(Qt5Core_FOUND)
   find_package(Qt5Transitional REQUIRED Test)
 endif(Qt5Core_FOUND)
 
+if(QT4_FOUND)
+    set(QT_QTCORE_LIBRARY Qt4::QtCore)
+    set(QT_QTTEST_LIBRARY Qt4::QtTest)
+    set(QT_QTNETWORK_LIBRARY Qt4::QtNetwork)
+endif()
+
 add_subdirectory(base64unittest)
 add_subdirectory(bigintunittest)
 add_subdirectory(certunittest)

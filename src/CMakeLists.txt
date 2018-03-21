@@ -128,6 +128,15 @@ SET( SOURCES ${SOURCES} ${moc_SOURCES} ${nonmoc_SOURCES} )
 
 SET( SOURCES ${SOURCES} ${botan_SOURCES})
 
+if(OSX_FRAMEWORK)
+    SET( SOURCES ${SOURCES}
+        ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/pkgconfig/${QCA_PC_NAME}
+        ${qca_CERTSTORE}
+        ${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf
+        # ${CMAKE_CONFIG_FILES}
+    )
+endif()
+
 qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qca_core.h")
 qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qca_cert.h")
 qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qca_keystore.h")
@@ -140,26 +149,33 @@ qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qpipe.h")
 qt4_wrap_cpp( SOURCES "qca_safeobj.h")
 qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qca_safetimer.h")
 
-add_library(${QCA_LIB_NAME} ${SOURCES} ${public_HEADERS} ${OSX_RESOURCES})
+add_library(${QCA_LIB_NAME} ${SOURCES}  ${public_HEADERS} )
+
+if(WIN32)
+    set(TARGET_LINK_LIB ${TARGET_LINK_LIB} crypt32 ws2_32)
+	# target_link_libraries(${QCA_LIB_NAME} crypt32 ws2_32)
+endif(WIN32)
+
+if(APPLE)
+    find_library(COREFOUNDATION_LIBRARY CoreFoundation)
+    find_library(COREFOUNDATION_LIBRARY_SECURITY Security)
+
+    set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${COREFOUNDATION_LIBRARY} ${COREFOUNDATION_LIBRARY_SECURITY})
+
+   # set(COREFOUNDATION_LIBRARY "-framework CoreFoundation")
+   # set(COREFOUNDATION_LIBRARY_SECURITY "-framework Security")
+   # target_link_libraries(${QCA_LIB_NAME} ${COREFOUNDATION_LIBRARY} ${COREFOUNDATION_LIBRARY_SECURITY})
+endif(APPLE)
+
 
 target_link_extlibraries(${QCA_LIB_NAME})
 set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${QCA_LIB_NAME} PARENT_SCOPE)
 
-if(WIN32)
-	target_link_libraries(${QCA_LIB_NAME} crypt32 ws2_32)
-endif(WIN32)
-
-if(APPLE)
-   set(COREFOUNDATION_LIBRARY "-framework CoreFoundation")
-   set(COREFOUNDATION_LIBRARY_SECURITY "-framework Security")
-   target_link_libraries(${QCA_LIB_NAME} ${COREFOUNDATION_LIBRARY} ${COREFOUNDATION_LIBRARY_SECURITY})
-endif(APPLE)
-
 if(OSX_FRAMEWORK)
-    set_source_files_properties("${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/pkgconfig/${QCA_PC_NAME}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/pkgconfig")
-    set_source_files_properties("${qca_CERTSTORE}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/certs")
-    set_source_files_properties("${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/features")
-    set_source_files_properties("${CMAKE_CONFIG_FILES}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/cmake")
+    set_property(SOURCE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/pkgconfig/${QCA_PC_NAME} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/pkgconfig")
+    set_property(SOURCE ${qca_CERTSTORE} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/certs")
+    set_property(SOURCE ${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf PROPERTY MACOSX_PACKAGE_LOCATION "Resources/features")
+    # set_property(SOURCE ${CMAKE_CONFIG_FILES} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/CMake")
 
     set_target_properties(${QCA_LIB_NAME} PROPERTIES
         DEFINE_SYMBOL QCA_MAKEDLL
@@ -203,3 +219,12 @@ if(NOT DEVELOPER_MODE)
   install_pdb(${QCA_LIB_NAME} ${QCA_BINARY_INSTALL_DIR})
 endif()
 
+if(NOT DEVELOPER_MODE)
+    # Install the <Package>Config.cmake
+    install(FILES
+      ${PROJECT_BINARY_DIR}/${PACKAGE_UPPER_NAME}Config.cmake
+      DESTINATION ${INSTALL_CMAKECONF_DIR} COMPONENT dev)
+
+    # Install the export set for use with the install-tree
+    install(EXPORT ${QCA_CONFIG_NAME_BASE}Targets DESTINATION ${INSTALL_CMAKECONF_DIR} COMPONENT dev)
+endif()
