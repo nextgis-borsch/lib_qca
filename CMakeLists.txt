@@ -297,7 +297,7 @@ if(NOT WIN32)
 
   # qca2.pc uses absolute paths. So it must be there. Don't rellocate this.
   configure_file("qca2.pc.cmake" "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/pkgconfig/${QCA_PC_NAME}" @ONLY)
-  if(NOT DEVELOPER_MODE)
+  if(NOT DEVELOPER_MODE AND NOT OSX_FRAMEWORK)
     install(FILES "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/pkgconfig/${QCA_PC_NAME}" DESTINATION ${PKGCONFIG_INSTALL_PREFIX})
   endif()
 endif(NOT WIN32)
@@ -405,13 +405,13 @@ set( qca_HEADERS ${private_HEADERS} ${public_HEADERS} )
 
 include_directories(${QT_QTCORE_INCLUDE_DIR} "${qca_INCLUDEDIR}/QtCrypto")
 
-configure_file("crypto.prf.cmake" "${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" @ONLY)
-if(NOT DEVELOPER_MODE)
-  install(FILES "${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" DESTINATION "${QCA_FEATURE_INSTALL_DIR}")
-endif()
+# configure_file("crypto.prf.cmake" "${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" @ONLY)
+# if(NOT DEVELOPER_MODE)
+#   install(FILES "${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" DESTINATION "${QCA_FEATURE_INSTALL_DIR}")
+# endif()
 
 configure_file(man/qcatool.1 "${CMAKE_BINARY_DIR}/share/man/man1/${QCA_TOOL_NAME}.1" COPYONLY)
-if(NOT DEVELOPER_MODE)
+if(NOT DEVELOPER_MODE AND NOT OSX_FRAMEWORK)
   install(FILES "${CMAKE_BINARY_DIR}/share/man/man1/${QCA_TOOL_NAME}.1" DESTINATION "${QCA_MAN_INSTALL_DIR}/man1")
 endif()
 

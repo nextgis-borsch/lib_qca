@@ -134,6 +134,7 @@ if(OSX_FRAMEWORK)
         ${qca_CERTSTORE}
         ${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf
         # ${CMAKE_CONFIG_FILES}
+        ${CMAKE_BINARY_DIR}/share/man/man1/${QCA_TOOL_NAME}.1
     )
 endif()
 
@@ -176,6 +177,7 @@ if(OSX_FRAMEWORK)
     set_property(SOURCE ${qca_CERTSTORE} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/certs")
     set_property(SOURCE ${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf PROPERTY MACOSX_PACKAGE_LOCATION "Resources/features")
     # set_property(SOURCE ${CMAKE_CONFIG_FILES} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/CMake")
+    set_property(SOURCE ${CMAKE_BINARY_DIR}/share/man/man1/${QCA_TOOL_NAME}.1 PROPERTY MACOSX_PACKAGE_LOCATION "Resources/man")
 
     set_target_properties(${QCA_LIB_NAME} PROPERTIES
         DEFINE_SYMBOL QCA_MAKEDLL
