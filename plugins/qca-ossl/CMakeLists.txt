@@ -60,13 +60,15 @@ if(OPENSSL_FOUND)
   endif()
 
   include_directories(${OPENSSL_INCLUDE_DIR})
-  target_link_extlibraries(qca-ossl)
 
   if(WIN32)
     add_definitions(-DOSSL_097)
-    target_link_libraries(qca-ossl gdi32)
-    target_link_libraries(qca-ossl wsock32)
+    set(TARGET_LINK_LIB ${TARGET_LINK_LIB} gdi32 wsock32)
+    # target_link_libraries(qca-ossl gdi32)
+    # target_link_libraries(qca-ossl wsock32)
   endif()
+
+  target_link_extlibraries(qca-ossl)
 
   if(NOT DEVELOPER_MODE)
     install(TARGETS qca-ossl

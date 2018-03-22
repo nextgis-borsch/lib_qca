@@ -24,7 +24,7 @@ src/botantools/botan,src/botantools/botan,,"cpp,txt"
 src/botantools/botan/alloc_mmap,src/botantools/botan/alloc_mmap,,"cpp,h"
 src/botantools/botan/botan,src/botantools/botan/botan,,h
 src/botantools/botan/ml_unix,src/botantools/botan/ml_unix,,cpp
-src/botantools/botan/ml_win32,src/botantools/botan/ml_win33,,cpp
+src/botantools/botan/ml_win32,src/botantools/botan/ml_win32,,cpp
 src/botantools/botan/mux_qt,src/botantools/botan/mux_qt,,"cpp,h"
 src/support,src/support,,cpp
 tools/mozcerts,tools/mozcerts,,cpp

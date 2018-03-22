@@ -59,11 +59,13 @@ if(OSX_FRAMEWORK)
 endif()
 
 include_directories(gpgproc)
-target_link_extlibraries(qca-gnupg)
 
 if (WIN32)
-  target_link_libraries(qca-gnupg advapi32)
+  # target_link_libraries(qca-gnupg advapi32)
+  set(TARGET_LINK_LIB ${TARGET_LINK_LIB} advapi32)
 endif (WIN32)
+
+target_link_extlibraries(qca-gnupg)
 
 if(NOT DEVELOPER_MODE)
   install(TARGETS qca-gnupg DESTINATION

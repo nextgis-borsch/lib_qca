@@ -1631,8 +1631,8 @@ public:
 static bool make_dlgroup(const QByteArray &seed, int bits, int counter, DLParams *params)
 {
 	int ret_counter;
-	DSA *dsa = DSA_generate_parameters(bits, (unsigned char *)seed.data(), seed.size(), &ret_counter, NULL, NULL, NULL);
-	if(!dsa)
+    DSA *dsa;
+    if(!DSA_generate_parameters_ex(dsa, bits, (unsigned char *)seed.data(), seed.size(), &ret_counter, NULL, NULL))
 		return false;
 	if(ret_counter != counter)
 		return false;
@@ -1832,8 +1832,8 @@ public:
 
 	virtual void run()
 	{
-		RSA *rsa = RSA_generate_key(bits, exp, NULL, NULL);
-		if(!rsa)
+        RSA *rsa;
+		if(!RSA_generate_key_ex(rsa, bits, (BIGNUM*)exp, NULL))
 			return;
 		result = rsa;
 	}
@@ -7246,9 +7246,9 @@ public:
 		// FIXME: loop while we don't have enough random bytes.
 		while (true) {
 			r = RAND_bytes((unsigned char*)(buf.data()), size);
-			if (r == 1) break; // success
-			r = RAND_pseudo_bytes((unsigned char*)(buf.data()),
-								  size);
+			// if (r == 1) break; // success
+			// r = RAND_pseudo_bytes((unsigned char*)(buf.data()),
+			// 					  size);
 			if (r >= 0) break; // accept insecure random numbers
 		}
 		return buf;

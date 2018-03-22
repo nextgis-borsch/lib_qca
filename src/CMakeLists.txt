@@ -121,6 +121,8 @@ ENDIF (UNIX)
 
 IF(WIN32)
   SET( botan_SOURCES ${botan_SOURCES} ${botan_BASE}/ml_win32/mlock.cpp)
+  # Hack to properly generate moc files
+  add_definitions(-DQ_OS_WIN)
 ENDIF(WIN32)
 
 MY_AUTOMOC( moc_SOURCES )
@@ -211,7 +213,7 @@ if(NOT DEVELOPER_MODE)
   # Do not split 'PUBLIC_HEADER ...' line. It means install headers to folder
   # and set this folder as -I flag for imported target.
   # Also EXPORT doesn't actually install any files. It only created a new target.
-  install(TARGETS ${QCA_LIB_NAME} EXPORT ${QCA_CONFIG_NAME_BASE}Targets
+  install(TARGETS ${QCA_LIB_NAME} EXPORT ${PACKAGE_UPPER_NAME}Targets
           LIBRARY DESTINATION "${QCA_LIBRARY_INSTALL_DIR}"
           RUNTIME DESTINATION "${QCA_BINARY_INSTALL_DIR}"
           ARCHIVE DESTINATION "${QCA_LIBRARY_INSTALL_DIR}"
@@ -228,5 +230,5 @@ if(NOT DEVELOPER_MODE)
       DESTINATION ${INSTALL_CMAKECONF_DIR} COMPONENT dev)
 
     # Install the export set for use with the install-tree
-    install(EXPORT ${QCA_CONFIG_NAME_BASE}Targets DESTINATION ${INSTALL_CMAKECONF_DIR} COMPONENT dev)
+    install(EXPORT ${PACKAGE_UPPER_NAME}Targets DESTINATION ${INSTALL_CMAKECONF_DIR} COMPONENT dev)
 endif()
