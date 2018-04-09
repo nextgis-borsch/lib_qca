@@ -28,6 +28,10 @@ if(LIBGCRYPT_FOUND)
             SUFFIX ".dylib")
     endif()
 
+    set_property(TARGET qca-gcrypt APPEND PROPERTY COMPILE_DEFINITIONS_RELEASE QT_NO_DEBUG)
+    set_property(TARGET qca-gcrypt APPEND PROPERTY COMPILE_DEFINITIONS_RELWITHDEBINFO QT_NO_DEBUG)
+    set_property(TARGET qca-gcrypt APPEND PROPERTY COMPILE_DEFINITIONS_MINSIZEREL QT_NO_DEBUG)
+
     set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${LIBGCRYPT_LIBRARIES})
     target_link_extlibraries(qca-gcrypt)
 

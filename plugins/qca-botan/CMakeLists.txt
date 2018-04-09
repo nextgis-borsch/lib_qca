@@ -15,8 +15,12 @@ if(BOTAN_FOUND)
   if(OSX_FRAMEWORK)
     set_target_properties(qca-botan PROPERTIES
         INSTALL_RPATH ${PLUGIN_RPATH}
-        SUFFIX ".dylib") 
+        SUFFIX ".dylib")
   endif()
+
+  set_property(TARGET qca-botan APPEND PROPERTY COMPILE_DEFINITIONS_RELEASE QT_NO_DEBUG)
+  set_property(TARGET qca-botan APPEND PROPERTY COMPILE_DEFINITIONS_RELWITHDEBINFO QT_NO_DEBUG)
+  set_property(TARGET qca-botan APPEND PROPERTY COMPILE_DEFINITIONS_MINSIZEREL QT_NO_DEBUG)
 
   set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${BOTAN_LIBRARIES})
   target_link_extlibraries(qca-botan)
