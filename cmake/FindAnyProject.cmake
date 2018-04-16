@@ -143,6 +143,16 @@ function(find_anyproject name)
                 set(${UPPER_NAME}_INCLUDE_DIR ${${UPPER_NAME}_INCLUDE_DIR} CACHE INTERNAL "include directories ${name}")
                 set(${UPPER_NAME}_INCLUDE_DIRS ${${UPPER_NAME}_INCLUDE_DIR})
             endif()
+
+            # For Qt
+            if(find_anyproject_COMPONENTS)
+                foreach(_component ${find_anyproject_COMPONENTS})
+                    if(TARGET ${name}::${_component})
+                        set(${UPPER_NAME}_LIBRARIES ${${UPPER_NAME}_LIBRARIES} ${name}::${_component})
+                    endif()
+                endforeach()
+            endif()
+            
             if(${UPPER_NAME}_LIBRARIES)
                 set(${UPPER_NAME}_LIBRARIES ${${UPPER_NAME}_LIBRARIES} CACHE INTERNAL "library ${name}")
                 set(${UPPER_NAME}_LIBRARY ${${UPPER_NAME}_LIBRARIES})
