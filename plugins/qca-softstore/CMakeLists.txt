@@ -12,10 +12,6 @@ if(OSX_FRAMEWORK)
         SUFFIX ".dylib")
 endif()
 
-set_property(TARGET qca-softstore APPEND PROPERTY COMPILE_DEFINITIONS_RELEASE QT_NO_DEBUG)
-set_property(TARGET qca-softstore APPEND PROPERTY COMPILE_DEFINITIONS_RELWITHDEBINFO QT_NO_DEBUG)
-set_property(TARGET qca-softstore APPEND PROPERTY COMPILE_DEFINITIONS_MINSIZEREL QT_NO_DEBUG)
-
 add_definitions(${SOFTSTOREH_DEFINITIONS})
 include_directories(${SOFTSTOREH_INCLUDE_DIR})
 target_link_extlibraries(qca-softstore)

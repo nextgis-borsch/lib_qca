@@ -12,10 +12,6 @@ if(OSX_FRAMEWORK)
         SUFFIX ".dylib")
 endif()
 
-set_property(TARGET qca-logger APPEND PROPERTY COMPILE_DEFINITIONS_RELEASE QT_NO_DEBUG)
-set_property(TARGET qca-logger APPEND PROPERTY COMPILE_DEFINITIONS_RELWITHDEBINFO QT_NO_DEBUG)
-set_property(TARGET qca-logger APPEND PROPERTY COMPILE_DEFINITIONS_MINSIZEREL QT_NO_DEBUG)
-
 add_definitions(${LOGGERH_DEFINITIONS})
 include_directories(${LOGGERH_INCLUDE_DIR})
 target_link_extlibraries(qca-logger)
