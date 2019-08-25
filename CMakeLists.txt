@@ -72,8 +72,7 @@ if (NOT QT4_BUILD)
   # Do not automatically link Qt executables to qtmain target on Windows.
   # QCA exucatables use console mode only. Not need to link against qtmain.lib.
   set(Qt5_NO_LINK_QTMAIN ON)
-  find_anyproject(Qt5Core QUIET)
-  mark_as_advanced(Qt5Core_DIR)
+  find_anyproject(Qt5 REQUIRED COMPONENTS Core)
 endif()
 
 include(QcaMacro)
@@ -83,7 +82,7 @@ if (Qt5Core_FOUND)
   message(STATUS "Building with Qt5 support")
   # Got from ECM
   # Distros have no ECM. So I just copied required cmake modules.
-  find_package(Qt5Transitional REQUIRED COMPONENTS Core Network)
+  find_anyproject(Qt5 REQUIRED COMPONENTS Network)
   include(ECMQt4To5Porting)
 
   # include(GNUInstallDirs)
@@ -110,7 +109,7 @@ else()
   set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG>)
   if(WIN32)
       add_definitions(-DQT_DLL) # Only for shared libraries on win32
-  endif()  
+  endif()
   set(QCA_QT_PC_VERSION "QtCore")
 endif()
 

@@ -3,7 +3,7 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, polimax@mail.ru
 ################################################################################
-# Copyright (C) 2017-2018, NextGIS <info@nextgis.com>
+# Copyright (C) 2017-2019, NextGIS <info@nextgis.com>
 #
 # This script is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,3 +22,9 @@
 set(repo nextgis-borsch/lib_qt4)
 set(repo_type github)
 # set(repo_branch master) # No need to set as master is default value
+
+# Set for binary artifacts
+set(repo_bin lib_qt4)
+set(repo_bin_type repka)
+set(repo_bin_url https://rm.nextgis.com)
+set(repo_bin_id 2) # additional parameter. Not needed for github
