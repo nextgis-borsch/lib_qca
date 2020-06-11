@@ -30,7 +30,7 @@ GpgOp::Private::Private(GpgOp *_q)
 	: QObject(_q)
 	, sync(_q)
 	, q(_q)
-	, act(0)
+	, act(nullptr)
 	, waiting(false)
 {
 	reset(ResetAll);
@@ -46,10 +46,10 @@ void GpgOp::Private::reset(ResetMode mode)
 	if(act)
 	{
 		act->disconnect(this);
-		act->setParent(0);
+		act->setParent(nullptr);
 		act->deleteLater();
 
-		act = 0;
+		act = nullptr;
 	}
 
 	if(mode >= ResetSessionAndData)
@@ -78,12 +78,12 @@ void GpgOp::Private::make_act(GpgOp::Type _op)
 
 	act = new GpgAction(this);
 
-	connect(act, SIGNAL(readyRead()), SLOT(act_readyRead()));
-	connect(act, SIGNAL(bytesWritten(int)), SLOT(act_bytesWritten(int)));
-	connect(act, SIGNAL(needPassphrase(const QString &)), SLOT(act_needPassphrase(const QString &)));
-	connect(act, SIGNAL(needCard()), SLOT(act_needCard()));
-	connect(act, SIGNAL(finished()), SLOT(act_finished()));
-	connect(act, SIGNAL(readyReadDiagnosticText()), SLOT(act_readyReadDiagnosticText()));
+	connect(act, &GpgAction::readyRead, this, &GpgOp::Private::act_readyRead);
+	connect(act, &GpgAction::bytesWritten, this, &GpgOp::Private::act_bytesWritten);
+	connect(act, &GpgAction::needPassphrase, this, &GpgOp::Private::act_needPassphrase);
+	connect(act, &GpgAction::needCard, this, &GpgOp::Private::act_needCard);
+	connect(act, &GpgAction::finished, this, &GpgOp::Private::act_finished);
+	connect(act, &GpgAction::readyReadDiagnosticText, this, &GpgOp::Private::act_readyReadDiagnosticText);
 
 	act->input.bin = bin;
 	act->input.op = op;
@@ -157,7 +157,7 @@ void GpgOp::Private::act_needCard()
 
 void GpgOp::Private::act_readyReadDiagnosticText()
 {
-	QString s = act->readDiagnosticText();
+	const QString s = act->readDiagnosticText();
 	//printf("dtext ready: [%s]\n", qPrintable(s));
 	diagnosticText += s;
 
@@ -179,30 +179,30 @@ void GpgOp::Private::act_finished()
 	output = act->output;
 
 	QMap<int, QString> errmap;
-	errmap[GpgOp::ErrorProcess] = "ErrorProcess";
-	errmap[GpgOp::ErrorPassphrase] = "ErrorPassphrase";
-	errmap[GpgOp::ErrorFormat] = "ErrorFormat";
-	errmap[GpgOp::ErrorSignerExpired] = "ErrorSignerExpired";
-	errmap[GpgOp::ErrorEncryptExpired] = "ErrorEncryptExpired";
-	errmap[GpgOp::ErrorEncryptUntrusted] = "ErrorEncryptUntrusted";
-	errmap[GpgOp::ErrorEncryptInvalid] = "ErrorEncryptInvalid";
-	errmap[GpgOp::ErrorDecryptNoKey] = "ErrorDecryptNoKey";
-	errmap[GpgOp::ErrorUnknown] = "ErrorUnknown";
+	errmap[GpgOp::ErrorProcess] = QStringLiteral("ErrorProcess");
+	errmap[GpgOp::ErrorPassphrase] = QStringLiteral("ErrorPassphrase");
+	errmap[GpgOp::ErrorFormat] = QStringLiteral("ErrorFormat");
+	errmap[GpgOp::ErrorSignerExpired] = QStringLiteral("ErrorSignerExpired");
+	errmap[GpgOp::ErrorEncryptExpired] = QStringLiteral("ErrorEncryptExpired");
+	errmap[GpgOp::ErrorEncryptUntrusted] = QStringLiteral("ErrorEncryptUntrusted");
+	errmap[GpgOp::ErrorEncryptInvalid] = QStringLiteral("ErrorEncryptInvalid");
+	errmap[GpgOp::ErrorDecryptNoKey] = QStringLiteral("ErrorDecryptNoKey");
+	errmap[GpgOp::ErrorUnknown] = QStringLiteral("ErrorUnknown");
 	if(output.success)
-		diagnosticText += "GpgAction success\n";
+		diagnosticText += QStringLiteral("GpgAction success\n");
 	else
-		diagnosticText += QString("GpgAction error: %1\n").arg(errmap[output.errorCode]);
+		diagnosticText += QStringLiteral("GpgAction error: %1\n").arg(errmap[output.errorCode]);
 
 	if(output.wasSigned)
 	{
 		QString s;
 		if(output.verifyResult == GpgOp::VerifyGood)
-			s = "VerifyGood";
+			s = QStringLiteral("VerifyGood");
 		else if(output.verifyResult == GpgOp::VerifyBad)
-			s = "VerifyBad";
+			s = QStringLiteral("VerifyBad");
 		else
-			s = "VerifyNoKey";
-		diagnosticText += QString("wasSigned: verifyResult: %1\n").arg(s);
+			s = QStringLiteral("VerifyNoKey");
+		diagnosticText += QStringLiteral("wasSigned: verifyResult: %1\n").arg(s);
 	}
 
 	//printf("diagnosticText:\n%s", qPrintable(diagnosticText));
@@ -396,7 +396,7 @@ QByteArray GpgOp::read()
 	}
 	else
 	{
-		QByteArray a = d->result;
+		const QByteArray a = d->result;
 		d->result.clear();
 		return a;
 	}

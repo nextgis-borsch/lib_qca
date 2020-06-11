@@ -66,7 +66,7 @@ class Mutex_Factory
 class Default_Mutex_Factory : public Mutex_Factory
    {
    public:
-      Mutex* make();
+      Mutex* make() override;
    };
 
 /*************************************************
@@ -77,6 +77,9 @@ class Mutex_Holder
    public:
       Mutex_Holder(Mutex*);
       ~Mutex_Holder();
+
+      Mutex_Holder(const Mutex_Holder &) = delete;
+      Mutex_Holder &operator=(const Mutex_Holder &) = delete;
    private:
       Mutex* mux;
    };

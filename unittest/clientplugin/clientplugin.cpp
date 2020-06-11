@@ -23,6 +23,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "clientplugin.h"
+
 #include <QtCrypto>
 #include <QtCore/QPointer>
 #include <QtTest/QtTest>
@@ -30,20 +32,6 @@
 #ifdef QT_STATICPLUGIN
 #include "import_plugins.h"
 #endif
-
-class ClientPlugin : public QObject
-{
-    Q_OBJECT
-
-private slots:
-    void initTestCase();
-    void cleanupTestCase();
-    void testInsertRemovePlugin();
-
-private:
-    QCA::Initializer* m_init;
-
-};
 
 void ClientPlugin::initTestCase()
 {
@@ -55,41 +43,40 @@ void ClientPlugin::cleanupTestCase()
     delete m_init;
 }
 
-const QString providerName = "testClientSideProvider";
+static const QLatin1String providerName("testClientSideProvider");
 
 class TestClientProvider : public QObject, public QCA::Provider
 {
-        Q_OBJECT
-
+    Q_OBJECT
 public:
-        int qcaVersion() const
+        int qcaVersion() const override
         {
                 return QCA_VERSION;
         }
 
-        QString name() const
+        QString name() const override
         {
                 return providerName;
         }
 
-        QStringList features() const
+        QStringList features() const override
         {
                 QStringList list;
-                list += "testClientSideProviderFeature1";
-                list += "testClientSideProviderFeature2";
+                list += QStringLiteral("testClientSideProviderFeature1");
+                list += QStringLiteral("testClientSideProviderFeature2");
                 return list;
         }
 
-        Provider::Context *createContext(const QString &type)
+        Provider::Context *createContext(const QString &type) override
         {
-            if(type == "testClientSideProviderFeature1")
+            if(type == QLatin1String("testClientSideProviderFeature1"))
                 // return new Feature1Context(this);
-		return 0;
-            else if (type == "testClientSideProviderFeature2")
+		return nullptr;
+            else if (type == QLatin1String("testClientSideProviderFeature2"))
 		//  return new Feature2Context(this);
-		return 0;
+		return nullptr;
             else
-                return 0;
+                return nullptr;
         }
 };
 
@@ -102,11 +89,10 @@ void ClientPlugin::testInsertRemovePlugin()
     QCOMPARE(QCA::providerPriority(providerName), 10);
 
     QVERIFY(QCA::unloadProvider(providerName));
-    QCOMPARE(QCA::findProvider(providerName), static_cast<QCA::Provider *>(0));
+    QCOMPARE(QCA::findProvider(providerName), static_cast<QCA::Provider *>(nullptr));
     QVERIFY(provider.isNull());
 }
 
 QTEST_MAIN(ClientPlugin)
 
 #include "clientplugin.moc"
-

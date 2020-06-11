@@ -30,6 +30,7 @@
 //-----------------------------------------------------------
 class nssHashContext : public QCA::HashContext
 {
+    Q_OBJECT
 public:
     nssHashContext( QCA::Provider *p, const QString &type) : QCA::HashContext(p, type)
     {
@@ -48,22 +49,22 @@ public:
 	    return;
 	}
 
-	if ( QString("md2") == type ) {
+	if ( QLatin1String("md2") == type ) {
 	    m_hashAlgo = SEC_OID_MD2;
 	}
-	else if ( QString("md5") == type ) {
+	else if ( QLatin1String("md5") == type ) {
 	    m_hashAlgo = SEC_OID_MD5;
 	}
-	else if ( QString("sha1") == type ) {
+	else if ( QLatin1String("sha1") == type ) {
 	    m_hashAlgo = SEC_OID_SHA1;
 	}
-	else if ( QString("sha256") == type ) {
+	else if ( QLatin1String("sha256") == type ) {
 	    m_hashAlgo = SEC_OID_SHA256;
 	}
-	else if ( QString("sha384") == type ) {
+	else if ( QLatin1String("sha384") == type ) {
 	    m_hashAlgo = SEC_OID_SHA384;
 	}
-	else if ( QString("sha512") == type ) {
+	else if ( QLatin1String("sha512") == type ) {
 	    m_hashAlgo = SEC_OID_SHA512;
 	} else {
 	    qDebug() << "Unknown provider type: " << type;
@@ -83,19 +84,19 @@ public:
 	}
     }
 
-    ~nssHashContext()
+    ~nssHashContext() override
     {
 	PK11_DestroyContext(m_context, PR_TRUE);
 	if (m_slot)
 	    PK11_FreeSlot(m_slot);
     }
 
-    Context *clone() const
+    Context *clone() const override
     {
-	return new nssHashContext(*this);
+	return new nssHashContext(provider(), type());
     }
 
-    void clear()
+    void clear() override
     {
 	SECStatus s;
 
@@ -114,12 +115,12 @@ public:
 	}
     }
 
-    void update(const QCA::MemoryRegion &a)
+    void update(const QCA::MemoryRegion &a) override
     {
 	PK11_DigestOp(m_context, (const unsigned char*)a.data(), a.size());
     }
 
-    QCA::MemoryRegion final()
+    QCA::MemoryRegion final() override
     {
 	unsigned int len = 0;
 	QCA::SecureArray a( 64 );
@@ -139,11 +140,13 @@ private:
 //-----------------------------------------------------------
 class nssHmacContext : public QCA::MACContext
 {
+    Q_OBJECT
 public:
     nssHmacContext( QCA::Provider *p, const QString &type) : QCA::MACContext(p, type)
     {
 	NSS_NoDB_Init(".");
 
+	m_context = nullptr;
 	m_status = 0;
 
 	/* Get a slot to use for the crypto operations */
@@ -155,22 +158,22 @@ public:
 	    return;
 	}
 
-	if ( QString("hmac(md5)") == type ) {
+	if ( QLatin1String("hmac(md5)") == type ) {
 	    m_macAlgo = CKM_MD5_HMAC;
 	}
-	else if ( QString("hmac(sha1)") == type ) {
+	else if ( QLatin1String("hmac(sha1)") == type ) {
 	    m_macAlgo = CKM_SHA_1_HMAC;
 	}
-	else if ( QString("hmac(sha256)") == type ) {
+	else if ( QLatin1String("hmac(sha256)") == type ) {
 	    m_macAlgo = CKM_SHA256_HMAC;
 	}
-	else if ( QString("hmac(sha384)") == type ) {
+	else if ( QLatin1String("hmac(sha384)") == type ) {
 	    m_macAlgo = CKM_SHA384_HMAC;
 	}
-	else if ( QString("hmac(sha512)") == type ) {
+	else if ( QLatin1String("hmac(sha512)") == type ) {
 	    m_macAlgo = CKM_SHA512_HMAC;
 	}
-	else if ( QString("hmac(ripemd160)") == type ) {
+	else if ( QLatin1String("hmac(ripemd160)") == type ) {
 	    m_macAlgo = CKM_RIPEMD160_HMAC;
 	}
 	else {
@@ -179,16 +182,17 @@ public:
 	}
     }
 
-    ~nssHmacContext()
+    ~nssHmacContext() override
     {
-	PK11_DestroyContext(m_context, PR_TRUE);
+	if (m_context)
+	    PK11_DestroyContext(m_context, PR_TRUE);
 	if (m_slot)
 	    PK11_FreeSlot(m_slot);
     }
 
-    Context *clone() const
+    Context *clone() const override
     {
-	return new nssHmacContext(*this);
+	return new nssHmacContext(provider(), type());
     }
 
     void clear()
@@ -196,7 +200,7 @@ public:
 	PK11_DestroyContext(m_context, PR_TRUE);
 
 	SECItem noParams;
-	noParams.data = 0;
+	noParams.data = nullptr;
 	noParams.len = 0;
 
 	m_context = PK11_CreateContextBySymKey(m_macAlgo, CKA_SIGN, m_nssKey, &noParams);
@@ -212,22 +216,22 @@ public:
 	}
     }
 
-    QCA::KeyLength keyLength() const
+    QCA::KeyLength keyLength() const override
     {
         return anyKeyLength();
     }
 
-    void setup(const QCA::SymmetricKey &key)
+    void setup(const QCA::SymmetricKey &key) override
     {
         /* turn the raw key into a SECItem */
         SECItem keyItem;
 	keyItem.data = (unsigned char*) key.data();
 	keyItem.len = key.size();
 
-	m_nssKey = PK11_ImportSymKey(m_slot, m_macAlgo, PK11_OriginUnwrap, CKA_SIGN, &keyItem, NULL);
+	m_nssKey = PK11_ImportSymKey(m_slot, m_macAlgo, PK11_OriginUnwrap, CKA_SIGN, &keyItem, nullptr);
 
 	SECItem noParams;
-	noParams.data = 0;
+	noParams.data = nullptr;
 	noParams.len = 0;
 
 	m_context = PK11_CreateContextBySymKey(m_macAlgo, CKA_SIGN, m_nssKey, &noParams);
@@ -243,12 +247,12 @@ public:
 	}
     }
 
-    void update(const QCA::MemoryRegion &a)
+    void update(const QCA::MemoryRegion &a) override
     {
 	PK11_DigestOp(m_context, (const unsigned char*)a.data(), a.size());
     }
 
-    void final( QCA::MemoryRegion *out)
+    void final( QCA::MemoryRegion *out) override
     {
 	// NSS doesn't appear to be able to tell us how big the digest will
 	// be for a given algorithm until after we finalise it, so we work
@@ -271,27 +275,28 @@ private:
 //-----------------------------------------------------------
 class nssCipherContext : public QCA::CipherContext
 {
+    Q_OBJECT
 public:
     nssCipherContext( QCA::Provider *p, const QString &type) : QCA::CipherContext(p, type)
     {
 	NSS_NoDB_Init(".");
 
-	if ( QString("aes128-ecb") == type ) {
+	if ( QLatin1String("aes128-ecb") == type ) {
 	    m_cipherMechanism = CKM_AES_ECB;
 	}
-	else if ( QString("aes128-cbc") == type ) {
+	else if ( QLatin1String("aes128-cbc") == type ) {
 	    m_cipherMechanism = CKM_AES_CBC;
 	}
-	else if ( QString("des-ecb") == type ) {
+	else if ( QLatin1String("des-ecb") == type ) {
 	    m_cipherMechanism = CKM_DES_ECB;
 	}
-	else if ( QString("des-cbc") == type ) {
+	else if ( QLatin1String("des-cbc") == type ) {
 	    m_cipherMechanism = CKM_DES_CBC;
 	}
-	else if ( QString("des-cbc-pkcs7") == type ) {
+	else if ( QLatin1String("des-cbc-pkcs7") == type ) {
 	    m_cipherMechanism = CKM_DES_CBC_PAD;
 	}
-	else if ( QString("tripledes-ecb") == type ) {
+	else if ( QLatin1String("tripledes-ecb") == type ) {
 	    m_cipherMechanism = CKM_DES3_ECB;
 	}
 	else {
@@ -300,18 +305,18 @@ public:
 	}
     }
 
-    ~nssCipherContext()
+    ~nssCipherContext() override
 	{
 	}
 
     void setup(QCA::Direction dir,
                const QCA::SymmetricKey &key,
                const QCA::InitializationVector &iv,
-               const QCA::AuthTag &tag)
+               const QCA::AuthTag &tag) override
     {
 	Q_UNUSED(tag);
 	/* Get a slot to use for the crypto operations */
-	m_slot = PK11_GetBestSlot( m_cipherMechanism, NULL );
+	m_slot = PK11_GetBestSlot( m_cipherMechanism, nullptr );
 	if (!m_slot)
 	{
 	    qDebug() << "GetBestSlot failed";
@@ -326,12 +331,12 @@ public:
 	if (QCA::Encode == dir) {
 	    m_nssKey = PK11_ImportSymKey(m_slot, m_cipherMechanism,
 					 PK11_OriginUnwrap, CKA_ENCRYPT,
-					 &keyItem, NULL);
+					 &keyItem, nullptr);
 	} else {
 	    // decryption
 	    m_nssKey = PK11_ImportSymKey(m_slot, m_cipherMechanism,
 					 PK11_OriginUnwrap, CKA_DECRYPT,
-					 &keyItem, NULL);
+					 &keyItem, nullptr);
 	}
 
 	SECItem ivItem;
@@ -357,23 +362,23 @@ public:
 	}
     }
 
-    QCA::Provider::Context *clone() const
+    QCA::Provider::Context *clone() const override
 	{
 	    return new nssCipherContext(*this);
 	}
 
-    int blockSize() const
+    int blockSize() const override
 	{
 	    return PK11_GetBlockSize( m_cipherMechanism, m_params);
 	}
 
-    QCA::AuthTag tag() const
+    QCA::AuthTag tag() const override
     {
     // For future implementation
 	return QCA::AuthTag();
     }
 
-    bool update( const QCA::SecureArray &in, QCA::SecureArray *out )
+    bool update( const QCA::SecureArray &in, QCA::SecureArray *out ) override
 	{
 	    out->resize(in.size()+blockSize());
 	    int resultLength;
@@ -386,7 +391,7 @@ public:
 	    return true;
 	}
 
-    bool final( QCA::SecureArray *out )
+    bool final( QCA::SecureArray *out ) override
 	{
 	    out->resize(blockSize());
 	    unsigned int resultLength;
@@ -398,7 +403,7 @@ public:
 	    return true;
 	}
 
-    QCA::KeyLength keyLength() const
+    QCA::KeyLength keyLength() const override
 	{
 		int min = 0;
 		int max = 0;
@@ -441,111 +446,105 @@ private:
 class nssProvider : public QCA::Provider
 {
 public:
-    void init()
+    void init() override
     {
     }
 
-    ~nssProvider()
+    ~nssProvider() override
     {
     }
 
-    int qcaVersion() const
+    int qcaVersion() const override
     {
 	return QCA_VERSION;
     }
 
-    QString name() const
+    QString name() const override
     {
-	return "qca-nss";
+	return QStringLiteral("qca-nss");
     }
 
-    QStringList features() const
+    QStringList features() const override
     {
 	QStringList list;
 
-	list += "md2";
-	list += "md5";
-	list += "sha1";
-	list += "sha256";
-	list += "sha384";
-	list += "sha512";
+	list += QStringLiteral("md2");
+	list += QStringLiteral("md5");
+	list += QStringLiteral("sha1");
+	list += QStringLiteral("sha256");
+	list += QStringLiteral("sha384");
+	list += QStringLiteral("sha512");
 
-	list += "hmac(md5)";
-	list += "hmac(sha1)";
-	list += "hmac(sha256)";
-	list += "hmac(sha384)";
-	list += "hmac(sha512)";
+	list += QStringLiteral("hmac(md5)");
+	list += QStringLiteral("hmac(sha1)");
+	list += QStringLiteral("hmac(sha256)");
+	list += QStringLiteral("hmac(sha384)");
+	list += QStringLiteral("hmac(sha512)");
 	// appears to not be implemented in NSS yet
-	// list += "hmac(ripemd160)";
+	// list += QStringLiteral("hmac(ripemd160)");
 
-	list += "aes128-ecb";
-	list += "aes128-cbc";
-	list += "des-ecb";
-	list += "des-cbc";
-	list += "des-cbc-pkcs7";
-	list += "tripledes-ecb";
+	list += QStringLiteral("aes128-ecb");
+	list += QStringLiteral("aes128-cbc");
+	list += QStringLiteral("des-ecb");
+	list += QStringLiteral("des-cbc");
+	list += QStringLiteral("des-cbc-pkcs7");
+	list += QStringLiteral("tripledes-ecb");
 
 	return list;
     }
 
-    Context *createContext(const QString &type)
+    Context *createContext(const QString &type) override
     {
-	if ( type == "md2" )
+	if ( type == QLatin1String("md2") )
 	    return new nssHashContext( this, type );
-	if ( type == "md5" )
+	if ( type == QLatin1String("md5") )
 	    return new nssHashContext( this, type );
-	if ( type == "sha1" )
+	if ( type == QLatin1String("sha1") )
 	    return new nssHashContext( this, type );
-	if ( type == "sha256" )
+	if ( type == QLatin1String("sha256") )
 	    return new nssHashContext( this, type );
-	if ( type == "sha384" )
+	if ( type == QLatin1String("sha384") )
 	    return new nssHashContext( this, type );
-	if ( type == "sha512" )
+	if ( type == QLatin1String("sha512") )
 	    return new nssHashContext( this, type );
 
-	if ( type == "hmac(md5)" )
+	if ( type == QLatin1String("hmac(md5)") )
 	    return new nssHmacContext( this, type );
-	if ( type == "hmac(sha1)" )
+	if ( type == QLatin1String("hmac(sha1)") )
 	    return new nssHmacContext( this, type );
-	if ( type == "hmac(sha256)" )
+	if ( type == QLatin1String("hmac(sha256)") )
 	    return new nssHmacContext( this, type );
-	if ( type == "hmac(sha384)" )
+	if ( type == QLatin1String("hmac(sha384)") )
 	    return new nssHmacContext( this, type );
-	if ( type == "hmac(sha512)" )
+	if ( type == QLatin1String("hmac(sha512)") )
 	    return new nssHmacContext( this, type );
-	if ( type == "hmac(ripemd160)" )
+	if ( type == QLatin1String("hmac(ripemd160)") )
 	    return new nssHmacContext( this, type );
 
-	if ( type == "aes128-ecb" )
+	if ( type == QLatin1String("aes128-ecb") )
 	    return new nssCipherContext( this, type);
-	if ( type == "aes128-cbc" )
+	if ( type == QLatin1String("aes128-cbc") )
 	    return new nssCipherContext( this, type);
-	if ( type == "des-ecb" )
+	if ( type == QLatin1String("des-ecb") )
 	    return new nssCipherContext( this, type);
-	if ( type == "des-cbc" )
+	if ( type == QLatin1String("des-cbc") )
 	    return new nssCipherContext( this, type);
-	if ( type == "des-cbc-pkcs7" )
+	if ( type == QLatin1String("des-cbc-pkcs7") )
 	    return new nssCipherContext( this, type);
-	if ( type == "tripledes-ecb" )
+	if ( type == QLatin1String("tripledes-ecb") )
 	    return new nssCipherContext( this, type);
 	else
-	    return 0;
+	    return nullptr;
     }
 };
 
 class nssPlugin : public QObject, public QCAPlugin
 {
 	Q_OBJECT
-#if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.affinix.qca.Plugin/1.0")
-#endif
 	Q_INTERFACES( QCAPlugin )
 public:
-	virtual QCA::Provider *createProvider() { return new nssProvider; }
+	QCA::Provider *createProvider() override { return new nssProvider; }
 };
 
 #include "qca-nss.moc"
-
-#if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(qca_nss, nssPlugin)
-#endif

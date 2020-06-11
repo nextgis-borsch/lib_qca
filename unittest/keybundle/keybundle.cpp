@@ -34,7 +34,7 @@ class KeyBundleTest : public QObject
 {
   Q_OBJECT
 
-private slots:
+private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
     void nullBundle();
@@ -66,13 +66,13 @@ void KeyBundleTest::nullBundle()
     QVERIFY( nullBundle.certificateChain().isEmpty() );
     QVERIFY( nullBundle.privateKey().isNull() );
 
-    QCA::KeyBundle nullCopy = nullBundle;
+    QCA::KeyBundle nullCopy = nullBundle; // NOLINT(performance-unnecessary-copy-initialization) This is copied on purpose to check the assignment operator
     QVERIFY( nullCopy.isNull() );
     QCOMPARE( nullCopy.name(), QString() );
     QVERIFY( nullCopy.certificateChain().isEmpty() );
     QVERIFY( nullCopy.privateKey().isNull() );
 
-    QCA::KeyBundle nullAssigned( nullCopy );
+    QCA::KeyBundle nullAssigned( nullCopy ); // NOLINT(performance-unnecessary-copy-initialization) This is copied on purpose to check the copy constructor
     QVERIFY( nullAssigned.isNull() );
     QCOMPARE( nullAssigned.name(), QString() );
     QVERIFY( nullAssigned.certificateChain().isEmpty() );
@@ -84,19 +84,19 @@ void KeyBundleTest::fromFile()
     if ( QCA::isSupported("pkcs12") ) {
 	// "start" is the passphrase, but you wouldn't normally
 	// code it in like this
-	QCA::KeyBundle userBundle( "user2good.p12", "start" );
+	QCA::KeyBundle userBundle( QStringLiteral("user2good.p12"), "start" );
 	QCOMPARE( userBundle.isNull(), false );
 	QCOMPARE( userBundle.name(), QString() );
 	QCOMPARE( userBundle.certificateChain().isEmpty(), false );
 	QCOMPARE( userBundle.privateKey().isNull(), false );
 
-	QCA::KeyBundle userBundleCopy = userBundle;
+	QCA::KeyBundle userBundleCopy = userBundle; // NOLINT(performance-unnecessary-copy-initialization) This is copied on purpose to check the assignment operator
 	QCOMPARE( userBundleCopy.isNull(), false );
 	QCOMPARE( userBundleCopy.name(), QString() );
 	QCOMPARE( userBundleCopy.certificateChain().isEmpty(), false );
 	QCOMPARE( userBundleCopy.privateKey().isNull(), false );
 
-	QCA::KeyBundle userBundleAssign( userBundleCopy );
+	QCA::KeyBundle userBundleAssign( userBundleCopy ); // NOLINT(performance-unnecessary-copy-initialization) This is copied on purpose to check the copy constructor
 	QCOMPARE( userBundleAssign.isNull(), false );
 	QCOMPARE( userBundleAssign.name(), QString() );
 	QCOMPARE( userBundleAssign.certificateChain().isEmpty(), false );
@@ -107,19 +107,19 @@ void KeyBundleTest::fromFile()
 void KeyBundleTest::names()
 {
     if ( QCA::isSupported("pkcs12") ) {
-	QCA::KeyBundle serverBundle( "servergood2.p12", "start" );
+	QCA::KeyBundle serverBundle( QStringLiteral("servergood2.p12"), "start" );
 	QCOMPARE( serverBundle.isNull(), false );
 	QCOMPARE( serverBundle.name(), QString() );
 
-	serverBundle.setName( "Some Server Bundle" );
-	QCOMPARE( serverBundle.name(), QString( "Some Server Bundle" ) );
+	serverBundle.setName( QStringLiteral("Some Server Bundle") );
+	QCOMPARE( serverBundle.name(), QStringLiteral( "Some Server Bundle" ) );
     }
 }
 
 void KeyBundleTest::certChain()
 {
     if ( QCA::isSupported("pkcs12") ) {
-	QCA::KeyBundle serverBundle( "servergood2.p12", "start" );
+	QCA::KeyBundle serverBundle( QStringLiteral("servergood2.p12"), "start" );
 	QCOMPARE( serverBundle.isNull(), false );
 	QCOMPARE( serverBundle.certificateChain().size(), 1 );
     }
@@ -128,7 +128,7 @@ void KeyBundleTest::certChain()
 void KeyBundleTest::privKey()
 {
     if ( QCA::isSupported("pkcs12") ) {
-	QCA::KeyBundle serverBundle( "servergood2.p12", "start" );
+	QCA::KeyBundle serverBundle( QStringLiteral("servergood2.p12"), "start" );
 	QCOMPARE( serverBundle.isNull(), false );
 	QCOMPARE( serverBundle.privateKey().isNull(), false );
     }
@@ -142,24 +142,24 @@ void KeyBundleTest::createBundle()
     if ( !QCA::isSupported( "certificate" ) )
         return;
 
-    QCA::Certificate ca( "RootCA2cert.pem" );
+    QCA::Certificate ca( QStringLiteral("RootCA2cert.pem") );
     QCOMPARE( ca.isNull(), false );
 
-    QCA::Certificate primary( "user2goodcert.pem" );
+    QCA::Certificate primary( QStringLiteral("user2goodcert.pem") );
     QCOMPARE( primary.isNull(), false );
 
-    QCA::PrivateKey key( "user2goodkey.pem" );
+    QCA::PrivateKey key( QStringLiteral("user2goodkey.pem") );
     QCOMPARE( key.isNull(), false );
 
     QCA::CertificateChain chain( primary );
     chain.append( ca );
 
     newBundle->setCertificateChainAndKey( chain, key );
-    newBundle->setName( "My New Key Bundle" );
+    newBundle->setName( QStringLiteral("My New Key Bundle") );
 
     QCOMPARE( newBundle->certificateChain(), chain );
     QCOMPARE( newBundle->privateKey(), key );
-    QCOMPARE( newBundle->name(), QString( "My New Key Bundle" ) );
+    QCOMPARE( newBundle->name(), QStringLiteral( "My New Key Bundle" ) );
 
     // Try round tripping the bundle
     foreach( const QCA::Provider *thisProvider, QCA::providers() ) {
@@ -173,7 +173,7 @@ void KeyBundleTest::createBundle()
 	    QCA::KeyBundle bundleFromArray = QCA::KeyBundle::fromArray( bundleArray, "reel secrut", &res, provider );
 	    QCOMPARE( res, QCA::ConvertGood );
 	    QCOMPARE( bundleFromArray.isNull(), false );
-	    QCOMPARE( bundleFromArray.name(), QString( "My New Key Bundle" ) );
+	    QCOMPARE( bundleFromArray.name(), QStringLiteral( "My New Key Bundle" ) );
 	    QCOMPARE( bundleFromArray.certificateChain(), chain );
 	    QCOMPARE( bundleFromArray.privateKey(), key );
 
@@ -186,7 +186,7 @@ void KeyBundleTest::createBundle()
 	    QCA::KeyBundle bundleFromFile = QCA::KeyBundle::fromFile( tempFile.fileName(), "file passphrase", &res, provider );
 	    QCOMPARE( res, QCA::ConvertGood );
 	    QCOMPARE( bundleFromFile.isNull(), false );
-	    QCOMPARE( bundleFromFile.name(), QString( "My New Key Bundle" ) );
+	    QCOMPARE( bundleFromFile.name(), QStringLiteral( "My New Key Bundle" ) );
 	    QCOMPARE( bundleFromFile.certificateChain(), chain );
 	    QCOMPARE( bundleFromFile.privateKey(), key );
 	}

@@ -27,54 +27,49 @@ using namespace gpgQCAPlugin;
 class gnupgProvider : public QCA::Provider
 {
 public:
-	virtual void init()
+	void init() override
 	{
 	}
 
-	virtual int qcaVersion() const
+	int qcaVersion() const override
 	{
 		return QCA_VERSION;
 	}
 
-	virtual QString name() const
+	QString name() const override
 	{
-		return "qca-gnupg";
+		return QStringLiteral("qca-gnupg");
 	}
 
-	virtual QStringList features() const
+	QStringList features() const override
 	{
 		QStringList list;
-		list += "pgpkey";
-		list += "openpgp";
-		list += "keystorelist";
+		list += QStringLiteral("pgpkey");
+		list += QStringLiteral("openpgp");
+		list += QStringLiteral("keystorelist");
 		return list;
 	}
 
-	virtual Context *createContext(const QString &type)
+	Context *createContext(const QString &type) override
 	{
-		if(type == "pgpkey")
+		if(type == QLatin1String("pgpkey"))
 			return new MyPGPKeyContext(this);
-		else if(type == "openpgp")
+		else if(type == QLatin1String("openpgp"))
 			return new MyOpenPGPContext(this);
-		else if(type == "keystorelist")
+		else if(type == QLatin1String("keystorelist"))
 			return new MyKeyStoreList(this);
 		else
-			return 0;
+			return nullptr;
 	}
 };
 
 class gnupgPlugin : public QObject, public QCAPlugin
 {
 	Q_OBJECT
-#if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.affinix.qca.Plugin/1.0")
-#endif
 	Q_INTERFACES(QCAPlugin)
 public:
-	virtual QCA::Provider *createProvider() { return new gnupgProvider; }
+	QCA::Provider *createProvider() override { return new gnupgProvider; }
 };
 
 #include "qca-gnupg.moc"
-#if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(qca_gnupg, gnupgPlugin)
-#endif

@@ -104,8 +104,8 @@ public:
 		secmem = false;
 		loaded = false;
 		first_scan = false;
-		rng = 0;
-		logger = 0;
+		rng = nullptr;
+		logger = nullptr;
 		manager = new ProviderManager;
 	}
 
@@ -113,11 +113,11 @@ public:
 	{
 		KeyStoreManager::shutdown();
 		delete rng;
-		rng = 0;
+		rng = nullptr;
 		delete manager;
-		manager = 0;
+		manager = nullptr;
 		delete logger;
-		logger = 0;
+		logger = nullptr;
 	}
 
 	void ensure_loaded()
@@ -167,7 +167,7 @@ public:
 
 			// needed so deinit may delete the logger regardless
 			//   of what thread the logger was created from
-			logger->moveToThread(0);
+			logger->moveToThread(nullptr);
 		}
 		return logger;
 	}
@@ -178,10 +178,10 @@ public:
 
 		// if the global_rng was owned by a plugin, then delete it
 		rng_mutex.lock();
-		if(rng && (rng->provider() != manager->find("default")))
+		if(rng && (rng->provider() != manager->find(QStringLiteral("default"))))
 		{
 			delete rng;
-			rng = 0;
+			rng = nullptr;
 		}
 		rng_mutex.unlock();
 
@@ -190,7 +190,7 @@ public:
 };
 
 Q_GLOBAL_STATIC(QMutex, global_mutex)
-static Global *global = 0;
+static Global *global = nullptr;
 
 static bool features_have(const QStringList &have, const QStringList &want)
 {
@@ -223,9 +223,9 @@ void init(MemoryMode mode, int prealloc)
 
 	bool secmem = botan_init(prealloc, allow_mmap_fallback);
 
-	if(drop_root)
+	if ((geteuid() == 0)  && drop_root)
 	{
-#ifdef Q_OS_UNIX
+#if defined(Q_OS_UNIX)
 		setuid(getuid());
 #endif
 	}
@@ -273,7 +273,7 @@ void deinit()
 		qRemovePostRoutine(deinit);
 
 		delete global;
-		global = 0;
+		global = nullptr;
 		botan_deinit();
 	}
 }
@@ -321,7 +321,7 @@ bool haveSecureRandom()
 		return false;
 
 	QMutexLocker locker(global_random_mutex());
-	if(global_random()->provider()->name() != "default")
+	if(global_random()->provider()->name() != QLatin1String("default"))
 		return true;
 
 	return false;
@@ -352,7 +352,7 @@ bool isSupported(const QStringList &features, const QString &provider)
 		if(features_have(global->manager->allFeatures(), features))
 			return true;
 
-		global->manager->appendDiagnosticText(QString("Scanning to find features: %1\n").arg(features.join(" ")));
+		global->manager->appendDiagnosticText(QStringLiteral("Scanning to find features: %1\n").arg(features.join(QStringLiteral(" "))));
 
 		// ok, try scanning for new stuff
 		global->scan();
@@ -365,7 +365,7 @@ bool isSupported(const QStringList &features, const QString &provider)
 
 bool isSupported(const char *features, const QString &provider)
 {
-	return isSupported(QString(features).split(',', QString::SkipEmptyParts), provider);
+	return isSupported(QString::fromLatin1(features).split(QLatin1Char(','), QString::SkipEmptyParts), provider);
 }
 
 QStringList supportedFeatures()
@@ -383,7 +383,7 @@ QStringList defaultFeatures()
 	if(!global_check_load())
 		return QStringList();
 
-	return global->manager->find("default")->features();
+	return global->manager->find(QStringLiteral("default"))->features();
 }
 
 ProviderList providers()
@@ -439,7 +439,7 @@ int providerPriority(const QString &name)
 Provider *findProvider(const QString &name)
 {
 	if(!global_check_load())
-		return 0;
+		return nullptr;
 
 	global->ensure_first_scan();
 
@@ -449,26 +449,26 @@ Provider *findProvider(const QString &name)
 Provider *defaultProvider()
 {
 	if(!global_check_load())
-		return 0;
+		return nullptr;
 
-	return global->manager->find("default");
+	return global->manager->find(QStringLiteral("default"));
 }
 
 QStringList pluginPaths()
 {
 	QStringList paths;
 #ifndef DEVELOPER_MODE
-	const QString qcaPluginPath = qgetenv("QCA_PLUGIN_PATH");
+	const QByteArray qcaPluginPath = qgetenv("QCA_PLUGIN_PATH");
 	if (!qcaPluginPath.isEmpty())
 	{
 #ifdef Q_OS_WIN
-		QLatin1Char pathSep(';');
+		char pathSep(';');
 #else
-		QLatin1Char pathSep(':');
+		char pathSep(':');
 #endif
-		foreach (const QString &path, qcaPluginPath.split(pathSep))
+		foreach (const QByteArray &path, qcaPluginPath.split(pathSep))
 		{
-			QString canonicalPath = QDir(path).canonicalPath();
+			const QString canonicalPath = QDir(QFile::decodeName(path)).canonicalPath();
 			if (!canonicalPath.isEmpty())
 				paths << canonicalPath;
 		}
@@ -478,7 +478,7 @@ QStringList pluginPaths()
 #endif
 	// In developer mode load plugins only from buildtree.
 	// In regular mode QCA_PLUGIN_PATH is path where plugins was installed
-	paths << QDir(QCA_PLUGIN_PATH).canonicalPath();
+	paths << QDir(QStringLiteral(QCA_PLUGIN_PATH)).canonicalPath();
 #ifndef DEVELOPER_MODE
 	paths.removeDuplicates();
 #endif
@@ -550,7 +550,7 @@ QVariant getProperty(const QString &name)
 
 static bool configIsValid(const QVariantMap &config)
 {
-	if(!config.contains("formtype"))
+	if(!config.contains(QStringLiteral("formtype")))
 		return false;
 	QMapIterator<QString,QVariant> it(config);
 	while(it.hasNext())
@@ -565,14 +565,14 @@ static bool configIsValid(const QVariantMap &config)
 
 static QVariantMap readConfig(const QString &name)
 {
-	QSettings settings("Affinix", "QCA2");
-	settings.beginGroup("ProviderConfig");
-	QStringList providerNames = settings.value("providerNames").toStringList();
+	QSettings settings(QStringLiteral("Affinix"), QStringLiteral("QCA2"));
+	settings.beginGroup(QStringLiteral("ProviderConfig"));
+	const QStringList providerNames = settings.value(QStringLiteral("providerNames")).toStringList();
 	if(!providerNames.contains(name))
 		return QVariantMap();
 
 	settings.beginGroup(name);
-	QStringList keys = settings.childKeys();
+	const QStringList keys = settings.childKeys();
 	QVariantMap map;
 	foreach(const QString &key, keys)
 		map[key] = settings.value(key);
@@ -585,17 +585,17 @@ static QVariantMap readConfig(const QString &name)
 
 static bool writeConfig(const QString &name, const QVariantMap &config, bool systemWide = false)
 {
-	QSettings settings(QSettings::NativeFormat, systemWide ? QSettings::SystemScope : QSettings::UserScope, "Affinix", "QCA2");
-	settings.beginGroup("ProviderConfig");
+	QSettings settings(QSettings::NativeFormat, systemWide ? QSettings::SystemScope : QSettings::UserScope, QStringLiteral("Affinix"), QStringLiteral("QCA2"));
+	settings.beginGroup(QStringLiteral("ProviderConfig"));
 
 	// version
-	settings.setValue("version", 2);
+	settings.setValue(QStringLiteral("version"), 2);
 
 	// add the entry if needed
-	QStringList providerNames = settings.value("providerNames").toStringList();
+	QStringList providerNames = settings.value(QStringLiteral("providerNames")).toStringList();
 	if(!providerNames.contains(name))
 		providerNames += name;
-	settings.setValue("providerNames", providerNames);
+	settings.setValue(QStringLiteral("providerNames"), providerNames);
 
 	settings.beginGroup(name);
 	QMapIterator<QString,QVariant> it(config);
@@ -651,7 +651,7 @@ QVariantMap getProviderConfig(const QString &name)
 	Provider *p = findProvider(name);
 	if(!p)
 		return conf;
-	QVariantMap pconf = p->defaultConfig();
+	const QVariantMap pconf = p->defaultConfig();
 	if(!configIsValid(pconf))
 		return conf;
 
@@ -661,7 +661,7 @@ QVariantMap getProviderConfig(const QString &name)
 
 	// if the config formtype doesn't match the provider's formtype,
 	//   then use the provider's
-	if(pconf["formtype"] != conf["formtype"])
+	if(pconf[QStringLiteral("formtype")] != conf[QStringLiteral("formtype")])
 		return pconf;
 
 	// otherwise, use the config loaded
@@ -685,7 +685,7 @@ void saveProviderConfig(const QString &name)
 QVariantMap getProviderConfig_internal(Provider *p)
 {
 	QVariantMap conf;
-	QString name = p->name();
+	const QString name = p->name();
 
 	global->config_mutex.lock();
 
@@ -700,7 +700,7 @@ QVariantMap getProviderConfig_internal(Provider *p)
 
 	// if provider doesn't exist or doesn't have a valid config form,
 	//   use the config we loaded
-	QVariantMap pconf = p->defaultConfig();
+	const QVariantMap pconf = p->defaultConfig();
 	if(!configIsValid(pconf))
 		return conf;
 
@@ -710,7 +710,7 @@ QVariantMap getProviderConfig_internal(Provider *p)
 
 	// if the config formtype doesn't match the provider's formtype,
 	//   then use the provider's
-	if(pconf["formtype"] != conf["formtype"])
+	if(pconf[QStringLiteral("formtype")] != conf[QStringLiteral("formtype")])
 		return pconf;
 
 	// otherwise, use the config loaded
@@ -738,11 +738,11 @@ Logger *logger()
 bool haveSystemStore()
 {
 	// ensure the system store is loaded
-	KeyStoreManager::start("default");
+	KeyStoreManager::start(QStringLiteral("default"));
 	KeyStoreManager ksm;
 	ksm.waitForBusyFinished();
 
-	QStringList list = ksm.keyStores();
+	const QStringList list = ksm.keyStores();
 	for(int n = 0; n < list.count(); ++n)
 	{
 		KeyStore ks(list[n], &ksm);
@@ -755,12 +755,12 @@ bool haveSystemStore()
 CertificateCollection systemStore()
 {
 	// ensure the system store is loaded
-	KeyStoreManager::start("default");
+	KeyStoreManager::start(QStringLiteral("default"));
 	KeyStoreManager ksm;
 	ksm.waitForBusyFinished();
 
 	CertificateCollection col;
-	QStringList list = ksm.keyStores();
+	const QStringList list = ksm.keyStores();
 	for(int n = 0; n < list.count(); ++n)
 	{
 		KeyStore ks(list[n], &ksm);
@@ -769,7 +769,7 @@ CertificateCollection systemStore()
 		if(ks.type() == KeyStore::System && ks.holdsTrustedCertificates())
 		{
 			// extract contents
-			QList<KeyStoreEntry> entries = ks.entryList();
+			const QList<KeyStoreEntry> entries = ks.entryList();
 			for(int i = 0; i < entries.count(); ++i)
 			{
 				if(entries[i].type() == KeyStoreEntry::TypeCertificate)
@@ -825,7 +825,7 @@ QByteArray base64ToArray(const QString &base64String)
 
 static Provider *getProviderForType(const QString &type, const QString &provider)
 {
-	Provider *p = 0;
+	Provider *p = nullptr;
 	bool scanned = global->ensure_first_scan();
 	if(!provider.isEmpty())
 	{
@@ -874,13 +874,13 @@ static inline Provider::Context *doCreateContext(Provider *p, const QString &typ
 Provider::Context *getContext(const QString &type, const QString &provider)
 {
 	if(!global_check_load())
-		return 0;
+		return nullptr;
 
 	Provider *p;
 	{
 		p = getProviderForType(type, provider);
 		if(!p)
-			return 0;
+			return nullptr;
 	}
 
 	return doCreateContext(p, type);
@@ -889,13 +889,13 @@ Provider::Context *getContext(const QString &type, const QString &provider)
 Provider::Context *getContext(const QString &type, Provider *_p)
 {
 	if(!global_check_load())
-		return 0;
+		return nullptr;
 
 	Provider *p;
 	{
 		p = global->manager->find(_p);
 		if(!p)
-			return 0;
+			return nullptr;
 	}
 
 	return doCreateContext(p, type);
@@ -987,13 +987,13 @@ bool Provider::Context::sameProvider(const Context *c) const
 BasicContext::BasicContext(Provider *parent, const QString &type)
 :Context(parent, type)
 {
-	moveToThread(0); // no thread association
+	moveToThread(nullptr); // no thread association
 }
 
 BasicContext::BasicContext(const BasicContext &from)
 :Context(from)
 {
-	moveToThread(0); // no thread association
+	moveToThread(nullptr); // no thread association
 }
 
 BasicContext::~BasicContext()
@@ -1168,7 +1168,7 @@ bool KeyStoreListContext::isReadOnly(int) const
 
 KeyStoreEntryContext *KeyStoreListContext::entry(int id, const QString &entryId)
 {
-	KeyStoreEntryContext *out = 0;
+	KeyStoreEntryContext *out = nullptr;
 	QList<KeyStoreEntryContext*> list = entryList(id);
 	for(int n = 0; n < list.count(); ++n)
 	{
@@ -1185,7 +1185,7 @@ KeyStoreEntryContext *KeyStoreListContext::entry(int id, const QString &entryId)
 KeyStoreEntryContext *KeyStoreListContext::entryPassive(const QString &serialized)
 {
 	Q_UNUSED(serialized);
-	return 0;
+	return nullptr;
 }
 
 QString KeyStoreListContext::writeEntry(int, const KeyBundle &)
@@ -1270,13 +1270,13 @@ MemoryRegion Filter::process(const MemoryRegion &a)
 	MemoryRegion buf = update(a);
 	if(!ok())
 		return MemoryRegion();
-	MemoryRegion fin = final();
+	const MemoryRegion fin = final();
 	if(!ok())
 		return MemoryRegion();
 	if(buf.isSecure() || fin.isSecure())
 		return (SecureArray(buf) + SecureArray(fin));
 	else
-		return (buf.toByteArray() + fin.toByteArray());
+		return QByteArray(buf.toByteArray() + fin.toByteArray());
 }
 
 //----------------------------------------------------------------------------
@@ -1343,7 +1343,7 @@ Provider *Algorithm::provider() const
 	if(d)
 		return d->c->provider();
 	else
-		return 0;
+		return nullptr;
 }
 
 Provider::Context *Algorithm::context()
@@ -1351,7 +1351,7 @@ Provider::Context *Algorithm::context()
 	if(d)
 		return d->c;
 	else
-		return 0;
+		return nullptr;
 }
 
 const Provider::Context *Algorithm::context() const
@@ -1359,7 +1359,7 @@ const Provider::Context *Algorithm::context() const
 	if(d)
 		return d->c;
 	else
-		return 0;
+		return nullptr;
 }
 
 void Algorithm::change(Provider::Context *c)
@@ -1367,7 +1367,7 @@ void Algorithm::change(Provider::Context *c)
 	if(c)
 		d = new Private(c);
 	else
-		d = 0;
+		d = nullptr;
 }
 
 void Algorithm::change(const QString &type, const QString &provider)
@@ -1375,7 +1375,7 @@ void Algorithm::change(const QString &type, const QString &provider)
 	if(!type.isEmpty())
 		change(getContext(type, provider));
 	else
-		change(0);
+		change(nullptr);
 }
 
 Provider::Context *Algorithm::takeContext()
@@ -1383,12 +1383,12 @@ Provider::Context *Algorithm::takeContext()
 	if(d)
 	{
 		Provider::Context *c = d->c; // should cause a detach
-		d->c = 0;
-		d = 0;
+		d->c = nullptr;
+		d = nullptr;
 		return c;
 	}
 	else
-		return 0;
+		return nullptr;
 }
 
 //----------------------------------------------------------------------------
@@ -1414,7 +1414,7 @@ SymmetricKey::SymmetricKey(const QByteArray &a)
 }
 
 /* from libgcrypt-1.2.0 */
-static unsigned char desWeakKeyTable[64][8] =
+static const unsigned char desWeakKeyTable[64][8] =
 {
 	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, /*w*/
 	{ 0x00, 0x00, 0x1e, 0x1e, 0x00, 0x00, 0x0e, 0x0e },
@@ -1491,9 +1491,9 @@ bool SymmetricKey::isWeakDESKey()
 	for(uint i = 0; i < 8; i++)
 		workingCopy[i] = (data()[i]) & 0xfe;
 
-	for(int n = 0; n < 64; n++)
+	for(auto n : desWeakKeyTable)
 	{
-		if(memcmp(workingCopy.data(), desWeakKeyTable[n], 8) == 0)
+		if(memcmp(workingCopy.data(), n, 8) == 0)
 			return true;
 	}
 	return false;
@@ -1663,11 +1663,11 @@ class HandlerBase : public QObject
 {
 	Q_OBJECT
 public:
-	HandlerBase(QObject *parent = 0) : QObject(parent)
+	HandlerBase(QObject *parent = nullptr) : QObject(parent)
 	{
 	}
 
-protected slots:
+protected Q_SLOTS:
 	virtual void ask(int id, const QCA::Event &e) = 0;
 };
 
@@ -1675,7 +1675,7 @@ class AskerBase : public QObject
 {
 	Q_OBJECT
 public:
-	AskerBase(QObject *parent = 0) : QObject(parent)
+	AskerBase(QObject *parent = nullptr) : QObject(parent)
 	{
 	}
 
@@ -1693,7 +1693,7 @@ static void asker_cancel(AskerBase *a);
 Q_GLOBAL_STATIC(QMutex, g_event_mutex)
 
 class EventGlobal;
-static EventGlobal *g_event = 0;
+static EventGlobal *g_event = nullptr;
 
 class EventGlobal
 {
@@ -1835,7 +1835,7 @@ void handler_remove(HandlerBase *h)
 	if(at == -1)
 		return;
 
-	QList<int> ids = g_event->handlers[at].ids;
+	const QList<int> ids = g_event->handlers[at].ids;
 	g_event->handlers.removeAt(at);
 
 	// adjust handler positions within askers
@@ -1857,7 +1857,7 @@ void handler_remove(HandlerBase *h)
 	if(g_event->handlers.isEmpty())
 	{
 		delete g_event;
-		g_event = 0;
+		g_event = nullptr;
 	}
 }
 
@@ -1928,7 +1928,7 @@ bool asker_ask(AskerBase *a, const Event &e)
 	i.event = e;
 	i.handler_pos = pos;
 	g_event->askers += i;
-	int asker_at = g_event->askers.count() - 1;
+	const int asker_at = g_event->askers.count() - 1;
 
 	g_event->ask(asker_at);
 	return true;
@@ -1965,8 +1965,8 @@ public:
 		started = false;
 	}
 
-public slots:
-	virtual void ask(int id, const QCA::Event &e)
+public Q_SLOTS:
+	void ask(int id, const QCA::Event &e) override
 	{
 		activeIds += id;
 		emit q->eventReady(id, e);
@@ -2049,7 +2049,7 @@ public:
 	AskerPrivate(PasswordAsker *parent) : AskerBase(parent)
 	{
 		passwordAsker = parent;
-		tokenAsker = 0;
+		tokenAsker = nullptr;
 		type = Password;
 		accepted = false;
 		waiting = false;
@@ -2058,7 +2058,7 @@ public:
 
 	AskerPrivate(TokenAsker *parent) : AskerBase(parent)
 	{
-		passwordAsker = 0;
+		passwordAsker = nullptr;
 		tokenAsker = parent;
 		type = Token;
 		accepted = false;
@@ -2086,7 +2086,7 @@ public:
 			asker_cancel(this);
 	}
 
-	virtual void set_accepted(const SecureArray &_password)
+	void set_accepted(const SecureArray &_password) override
 	{
 		QMutexLocker locker(&m);
 		accepted = true;
@@ -2098,7 +2098,7 @@ public:
 			QMetaObject::invokeMethod(this, "emitResponseReady", Qt::QueuedConnection);
 	}
 
-	virtual void set_rejected()
+	void set_rejected() override
 	{
 		QMutexLocker locker(&m);
 		done = true;
@@ -2118,18 +2118,19 @@ public:
 		waiting = false;
 	}
 
-public slots:
+public Q_SLOTS:
 	virtual void emitResponseReady() = 0;
 };
 
 class PasswordAsker::Private : public AskerPrivate
 {
+    Q_OBJECT
 public:
 	Private(PasswordAsker *_q) : AskerPrivate(_q)
 	{
 	}
 
-	virtual void emitResponseReady()
+	void emitResponseReady() override
 	{
 		emit passwordAsker->responseReady();
 	}
@@ -2185,12 +2186,13 @@ SecureArray PasswordAsker::password() const
 //----------------------------------------------------------------------------
 class TokenAsker::Private : public AskerPrivate
 {
+    Q_OBJECT
 public:
 	Private(TokenAsker *_q) : AskerPrivate(_q)
 	{
 	}
 
-	virtual void emitResponseReady()
+	void emitResponseReady() override
 	{
 		emit tokenAsker->responseReady();
 	}

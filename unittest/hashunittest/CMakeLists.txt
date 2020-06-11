@@ -2,10 +2,9 @@ ENABLE_TESTING()
 
 set(hashunittest_bin_SRCS hashunittest.cpp)  
 
-MY_AUTOMOC( hashunittest_bin_SRCS )
-
 add_executable( hashunittest ${hashunittest_bin_SRCS} )
 
+target_compile_definitions(hashunittest PRIVATE TEST_DATA_DIR="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 target_link_qca_test_libraries(hashunittest)
 
 

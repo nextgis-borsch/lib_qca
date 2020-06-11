@@ -179,7 +179,7 @@ public:
 	Counter() : timer(this)
 	{
 		x = 0;
-		connect(&timer, SIGNAL(timeout()), SLOT(t_timeout()));
+		connect(&timer, &QTimer::timeout, this, &Counter::t_timeout);
 	}
 
 public slots:
@@ -194,7 +194,7 @@ public slots:
 		return x;
 	}
 
-private slots:
+private Q_SLOTS:
 	void t_timeout()
 	{
 		++x;
@@ -278,14 +278,14 @@ public:
 
 	   \param parent the parent object for this parent.
 	*/
-	SyncThread(QObject *parent = 0);
+	SyncThread(QObject *parent = nullptr);
 
 	/**
 	   Calls stop() and then destructs
 
 	   \note Subclasses should call stop() in their own destructor
 	*/
-	~SyncThread();
+	~SyncThread() override;
 
 	/**
 	   Starts the thread, begins the event loop the thread, and then
@@ -319,7 +319,7 @@ public:
 	   \param ok if not 0, true is stored here if the call succeeds,
 	   otherwise false is stored here.
 	*/
-	QVariant call(QObject *obj, const QByteArray &method, const QVariantList &args = QVariantList(), bool *ok = 0);
+	QVariant call(QObject *obj, const QByteArray &method, const QVariantList &args = QVariantList(), bool *ok = nullptr);
 
 protected:
 	/**
@@ -335,7 +335,7 @@ protected:
 	/**
 	   Starts the event loop and calls atStart and atStop as necessary
 	*/
-	virtual void run();
+	void run() override;
 
 private:
 	Q_DISABLE_COPY(SyncThread)
@@ -360,7 +360,7 @@ public:
 	  \param parent the parent object to this object
 	*/
 	Synchronizer(QObject *parent);
-	~Synchronizer();
+	~Synchronizer() override;
 
 	/**
 	   Call to pause execution in this thread. This function
@@ -409,8 +409,8 @@ public:
 	   set in the constructor, you can set it using setDirName()
 	   \param parent the parent object for this object
 	*/
-	explicit DirWatch(const QString &dir = QString(), QObject *parent = 0);
-	~DirWatch();
+	explicit DirWatch(const QString &dir = QString(), QObject *parent = nullptr);
+	~DirWatch() override;
 
 	/**
 	   The name of the directory that is being monitored
@@ -467,8 +467,8 @@ public:
 	   in this object, you can set it using setFileName()
 	   \param parent the parent object for this object
 	*/
-	explicit FileWatch(const QString &file = QString(), QObject *parent = 0);
-	~FileWatch();
+	explicit FileWatch(const QString &file = QString(), QObject *parent = nullptr);
+	~FileWatch() override;
 
 	/**
 	   The name of the file that is being monitored
@@ -596,8 +596,8 @@ public:
 	   you to test whether there is already a Console object of the 
 	   required Type, and if there is, obtain a reference to that object.
 	*/
-	Console(Type type, ChannelMode cmode, TerminalMode tmode, QObject *parent = 0);
-	~Console();
+	Console(Type type, ChannelMode cmode, TerminalMode tmode, QObject *parent = nullptr);
+	~Console() override;
 
 	/**
 	   The Type of this Console object
@@ -699,8 +699,8 @@ public:
 
 	   \param parent the parent object for this object
 	*/
-	ConsoleReference(QObject *parent = 0);
-	~ConsoleReference();
+	ConsoleReference(QObject *parent = nullptr);
+	~ConsoleReference() override;
 
 	/**
 	   Set the Console object to be managed, and start processing.
@@ -861,8 +861,8 @@ public:
 
 	   \param parent the parent object for this object
 	*/
-	ConsolePrompt(QObject *parent = 0);
-	~ConsolePrompt();
+	ConsolePrompt(QObject *parent = nullptr);
+	~ConsolePrompt() override;
 
 	/**
 	   Allow the user to enter data without it being echo'd to 
@@ -1039,7 +1039,7 @@ private:
 	*/
 	Logger();
 
-	~Logger();
+	~Logger() override;
 
 	QStringList m_loggerNames;
 	QList<AbstractLogDevice*> m_loggers;
@@ -1093,9 +1093,9 @@ protected:
 	   \param name the name of this log device
 	   \param parent the parent for this logger
 	*/
-	explicit AbstractLogDevice(const QString &name, QObject *parent = 0);
+	explicit AbstractLogDevice(const QString &name, QObject *parent = nullptr);
 
-	virtual ~AbstractLogDevice() = 0;
+	~AbstractLogDevice() override = 0;
 
 private:
 	Q_DISABLE_COPY(AbstractLogDevice)

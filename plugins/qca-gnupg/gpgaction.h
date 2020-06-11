@@ -72,8 +72,8 @@ public:
 	Input input;
 	Output output;
 
-	GpgAction(QObject *parent = 0);
-	~GpgAction();
+	GpgAction(QObject *parent = nullptr);
+	~GpgAction() override;
 	void reset();
 	void start();
 #ifdef QPIPE_SECURE
@@ -82,14 +82,14 @@ public:
 	void submitPassphrase(const QByteArray &a);
 #endif
 
-public slots:
+public Q_SLOTS:
 	QByteArray read();
 	void write(const QByteArray &in);
 	void endWrite();
 	void cardOkay();
 	QString readDiagnosticText();
 
-signals:
+Q_SIGNALS:
 	void readyRead();
 	void bytesWritten(int bytes);
 	void finished();
@@ -101,7 +101,7 @@ private:
 	void submitCommand(const QByteArray &a);
 
 	// since str is taken as a value, it is ok to use the same variable for 'rest'
-	QString nextArg(QString str, QString *rest = 0);
+	QString nextArg(QString str, QString *rest = nullptr);
 	void processStatusLine(const QString &line);
 	void processResult(int code);
 	void ensureDTextEmit();
@@ -125,7 +125,7 @@ private:
 	QTime timer;
 #endif
 
-private slots:
+private Q_SLOTS:
 	void t_dtext();
 	void proc_error(gpgQCAPlugin::GPGProc::Error e);
 	void proc_finished(int exitCode);

@@ -39,7 +39,7 @@ class SafeTimer::Private : public QObject
 	friend class SafeTimer;
 
 public:
-	Private(QObject *parent = 0);
+	Private(QObject *parent = nullptr);
 
 	int timerId;
 	int fixerTimerId;
@@ -48,15 +48,15 @@ public:
 	bool isActive;
 	QElapsedTimer elapsedTimer;
 
-public slots:
+public Q_SLOTS:
 	void fixTimer();
 
-signals:
+Q_SIGNALS:
 	void needFix();
 
 protected:
-	bool event(QEvent *event);
-	void timerEvent(QTimerEvent *event);
+	bool event(QEvent *event) override;
+	void timerEvent(QTimerEvent *event) override;
 };
 
 SafeTimer::Private::Private(QObject *parent)
@@ -68,13 +68,13 @@ SafeTimer::Private::Private(QObject *parent)
 	, isActive(false)
 	, elapsedTimer(QElapsedTimer())
 {
-	connect(this, SIGNAL(needFix()), SLOT(fixTimer()), Qt::QueuedConnection);
+	connect(this, &Private::needFix, this, &Private::fixTimer, Qt::QueuedConnection);
 }
 
 void SafeTimer::Private::fixTimer()
 {
 	// Start special timer to align ressurected old timer
-	int msec = qMax(0, interval - static_cast<int>(elapsedTimer.elapsed()));
+	const int msec = qMax(0, interval - static_cast<int>(elapsedTimer.elapsed()));
 
 	fixerTimerId = startTimer(msec);
 #ifdef SAFETIMER_DEBUG

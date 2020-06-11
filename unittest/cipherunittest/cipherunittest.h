@@ -34,7 +34,7 @@ class CipherUnitTest : public QObject
 
 	Q_OBJECT
 
-private slots:
+private Q_SLOTS:
 	void initTestCase();
 	void cleanupTestCase();
 	void aes128_data();
@@ -120,7 +120,7 @@ private slots:
 	void cast5();
 private:
 	QCA::Initializer* m_init;
-
+	QStringList providersToTest;
 };
 
 #endif // CIPHERUNITTEST_H

@@ -114,16 +114,16 @@ void Hex::clear()
 
 MemoryRegion Hex::update(const MemoryRegion &m)
 {
-	QByteArray a = m.toByteArray();
+	const QByteArray a = m.toByteArray();
 	if(_dir == Encode)
 	{
 		QByteArray out(a.size() * 2, 0);
 		int at = 0;
 		int c;
-		for(int n = 0; n < (int)a.size(); ++n)
+		for(const char ac : a)
 		{
-			uchar lo = (uchar)a[n] & 0x0f;
-			uchar hi = (uchar)a[n] >> 4;
+			uchar lo = (uchar)ac & 0x0f;
+			uchar hi = (uchar)ac >> 4;
 			c = enhex(hi);
 			if(c == -1)
 			{
@@ -158,9 +158,9 @@ MemoryRegion Hex::update(const MemoryRegion &m)
 		QByteArray out(a.size() / 2, 0);
 		int at = 0;
 		int c;
-		for(int n = 0; n < (int)a.size(); ++n)
+		for(const char ac : a)
 		{
-			c = dehex((char)a[n]);
+			c = dehex(ac);
 			if(c == -1)
 			{
 				_ok = false;
@@ -246,8 +246,8 @@ void Base64::setLineBreaksColumn(int column)
 static QByteArray b64encode(const QByteArray &s)
 {
 	int i;
-	int len = s.size();
-	static char tbl[] =
+	const int len = s.size();
+	static const char tbl[] =
 		"ABCDEFGH"
 		"IJKLMNOP"
 		"QRSTUVWX"
@@ -293,7 +293,7 @@ static QByteArray b64decode(const QByteArray &s, bool *ok)
 	// 64 specifies eof
 	// everything else specifies data
 
-	static signed char tbl[] =
+	static const signed char tbl[] =
 	{
 		-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 		-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
@@ -318,7 +318,7 @@ static QByteArray b64decode(const QByteArray &s, bool *ok)
 	*ok = true;
 
 	// this should be a multiple of 4
-	int len = s.size();
+	const int len = s.size();
 	if(len % 4)
 	{
 		*ok = false;
@@ -372,12 +372,12 @@ static QByteArray insert_linebreaks(const QByteArray &s, int *col, int lfAt)
 {
 	QByteArray out = s;
 
-	int needed = (out.size() + *col) / lfAt;   // how many newlines needed?
+	const int needed = (out.size() + *col) / lfAt;   // how many newlines needed?
 	if(needed > 0)
 	{
-		int firstlen = lfAt - *col;                // length of first chunk
+		const int firstlen = lfAt - *col;                // length of first chunk
 		int at = firstlen + (lfAt * (needed - 1)); // position of last newline
-		int lastlen = out.size() - at;             // length of last chunk
+		const int lastlen = out.size() - at;             // length of last chunk
 
 		//printf("size=%d,needed=%d,firstlen=%d,at=%d,lastlen=%d\n", out.size(), needed, firstlen, at, lastlen);
 
@@ -456,7 +456,7 @@ MemoryRegion Base64::update(const MemoryRegion &m)
 	else
 		chunk = 4;
 
-	int size = partial.size() + in.size();
+	const int size = partial.size() + in.size();
 	if(size < chunk)
 	{
 		appendArray(&partial, in);
@@ -483,7 +483,7 @@ MemoryRegion Base64::update(const MemoryRegion &m)
 	else
 	{
 		bool ok;
-		QByteArray out = b64decode(s, &ok);
+		const QByteArray out = b64decode(s, &ok);
 		if(!ok)
 			_ok = false;
 		return out;
@@ -502,7 +502,7 @@ MemoryRegion Base64::final()
 	else
 	{
 		bool ok;
-		QByteArray out = b64decode(partial, &ok);
+		const QByteArray out = b64decode(partial, &ok);
 		if(!ok)
 			_ok = false;
 		return out;

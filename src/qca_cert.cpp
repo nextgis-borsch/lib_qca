@@ -28,7 +28,7 @@
 #include <QFile>
 #include <QUrl>
 
-#include <stdlib.h>
+#include <cstdlib>
 
 namespace QCA {
 
@@ -50,9 +50,9 @@ static bool get_pkcs12_der(const QByteArray &der, const QString &fileName, void 
 {
 	QString _name;
 	QList<CertContext*> list;
-	PKeyContext *kc = 0;
+	PKeyContext *kc = nullptr;
 
-	PKCS12Context *pix = static_cast<PKCS12Context *>(getContext("pkcs12", provider));
+	PKCS12Context *pix = static_cast<PKCS12Context *>(getContext(QStringLiteral("pkcs12"), provider));
 	ConvertResult r = pix->fromPKCS12(der, passphrase, &_name, &list, &kc);
 
 	// error converting without passphrase?  maybe a passphrase is needed
@@ -101,7 +101,7 @@ static CertificateInfo orderedToMap(const CertificateInfoOrdered &info)
 		if(i.type().known() == EmailLegacy)
 		{
 			// de-dup
-			QList<QString> emails = out.values(Email);
+			const QList<QString> emails = out.values(Email);
 			if(!emails.contains(i.value()))
 				out.insert(Email, i.value());
 		}
@@ -112,7 +112,7 @@ static CertificateInfo orderedToMap(const CertificateInfoOrdered &info)
 
 static void moveMapValues(CertificateInfo *from, CertificateInfoOrdered *to, const CertificateInfoType &type)
 {
-	QList<QString> values = from->values(type);
+	const QList<QString> values = from->values(type);
 	from->remove(type);
 
 	// multimap values are stored in reverse.  we'll insert backwards in
@@ -140,7 +140,7 @@ static CertificateInfoOrdered mapToOrdered(const CertificateInfo &info)
 	moveMapValues(&in, &out, XMPP);
 
 	// get remaining types
-	QList<CertificateInfoType> typesLeft = in.keys();
+	const QList<CertificateInfoType> typesLeft = in.keys();
 
 	// dedup
 	QList<CertificateInfoType> types;
@@ -199,7 +199,7 @@ static const char OCSPSigning_id[]         = "1.3.6.1.5.5.7.3.9";
 
 static QString knownToId(CertificateInfoTypeKnown k)
 {
-	const char *out = 0;
+	const char *out = nullptr;
 	switch(k)
 	{
 		case CommonName:            out = CommonName_id; break;
@@ -221,40 +221,40 @@ static QString knownToId(CertificateInfoTypeKnown k)
 	Q_ASSERT(out);
 	if(!out)
 		abort();
-	return QString(out);
+	return QString::fromLatin1(out);
 }
 
 static int idToKnown(const QString &id)
 {
-	if(id == CommonName_id)
+	if(id == QLatin1String(CommonName_id))
 		return CommonName;
-	else if(id == Email_id)
+	else if(id == QLatin1String(Email_id))
 		return Email;
-	else if(id == EmailLegacy_id)
+	else if(id == QLatin1String(EmailLegacy_id))
 		return EmailLegacy;
-	else if(id == Organization_id)
+	else if(id == QLatin1String(Organization_id))
 		return Organization;
-	else if(id == OrganizationalUnit_id)
+	else if(id == QLatin1String(OrganizationalUnit_id))
 		return OrganizationalUnit;
-	else if(id == Locality_id)
+	else if(id == QLatin1String(Locality_id))
 		return Locality;
-	else if(id == IncorporationLocality_id)
+	else if(id == QLatin1String(IncorporationLocality_id))
 		return IncorporationLocality;
-	else if(id == State_id)
+	else if(id == QLatin1String(State_id))
 		return State;
-	else if(id == IncorporationState_id)
+	else if(id == QLatin1String(IncorporationState_id))
 		return IncorporationState;
-	else if(id == Country_id)
+	else if(id == QLatin1String(Country_id))
 		return Country;
-	else if(id == IncorporationCountry_id)
+	else if(id == QLatin1String(IncorporationCountry_id))
 		return IncorporationCountry;
-	else if(id == URI_id)
+	else if(id == QLatin1String(URI_id))
 		return URI;
-	else if(id == DNS_id)
+	else if(id == QLatin1String(DNS_id))
 		return DNS;
-	else if(id == IPAddress_id)
+	else if(id == QLatin1String(IPAddress_id))
 		return IPAddress;
-	else if(id == XMPP_id)
+	else if(id == QLatin1String(XMPP_id))
 		return XMPP;
 	else
 		return -1;
@@ -294,12 +294,12 @@ static const char *knownToShortName(CertificateInfoTypeKnown k)
 		case EmailLegacy:        return "emailAddress";
 		default:                                      break;
 	}
-	return 0;
+	return nullptr;
 }
 
 static QString constraintKnownToId(ConstraintTypeKnown k)
 {
-	const char *out = 0;
+	const char *out = nullptr;
 	switch(k)
 	{
 		case DigitalSignature:   out = DigitalSignature_id; break;
@@ -324,46 +324,46 @@ static QString constraintKnownToId(ConstraintTypeKnown k)
 	Q_ASSERT(out);
 	if(!out)
 		abort();
-	return QString(out);
+	return QString::fromLatin1(out);
 }
 
 static int constraintIdToKnown(const QString &id)
 {
-	if(id == DigitalSignature_id)
+	if(id == QLatin1String(DigitalSignature_id))
 		return DigitalSignature;
-	else if(id == NonRepudiation_id)
+	else if(id == QLatin1String(NonRepudiation_id))
 		return NonRepudiation;
-	else if(id == KeyEncipherment_id)
+	else if(id == QLatin1String(KeyEncipherment_id))
 		return KeyEncipherment;
-	else if(id == DataEncipherment_id)
+	else if(id == QLatin1String(DataEncipherment_id))
 		return DataEncipherment;
-	else if(id == KeyAgreement_id)
+	else if(id == QLatin1String(KeyAgreement_id))
 		return KeyAgreement;
-	else if(id == KeyCertificateSign_id)
+	else if(id == QLatin1String(KeyCertificateSign_id))
 		return KeyCertificateSign;
-	else if(id == CRLSign_id)
+	else if(id == QLatin1String(CRLSign_id))
 		return CRLSign;
-	else if(id == EncipherOnly_id)
+	else if(id == QLatin1String(EncipherOnly_id))
 		return EncipherOnly;
-	else if(id == DecipherOnly_id)
+	else if(id == QLatin1String(DecipherOnly_id))
 		return DecipherOnly;
-	else if(id == ServerAuth_id)
+	else if(id == QLatin1String(ServerAuth_id))
 		return ServerAuth;
-	else if(id == ClientAuth_id)
+	else if(id == QLatin1String(ClientAuth_id))
 		return ClientAuth;
-	else if(id == CodeSigning_id)
+	else if(id == QLatin1String(CodeSigning_id))
 		return CodeSigning;
-	else if(id == EmailProtection_id)
+	else if(id == QLatin1String(EmailProtection_id))
 		return EmailProtection;
-	else if(id == IPSecEndSystem_id)
+	else if(id == QLatin1String(IPSecEndSystem_id))
 		return IPSecEndSystem;
-	else if(id == IPSecTunnel_id)
+	else if(id == QLatin1String(IPSecTunnel_id))
 		return IPSecTunnel;
-	else if(id == IPSecUser_id)
+	else if(id == QLatin1String(IPSecUser_id))
 		return IPSecUser;
-	else if(id == TimeStamping_id)
+	else if(id == QLatin1String(TimeStamping_id))
 		return TimeStamping;
-	else if(id == OCSPSigning_id)
+	else if(id == QLatin1String(OCSPSigning_id))
 		return OCSPSigning;
 	else
 		return -1;
@@ -393,14 +393,14 @@ static QString dnLabel(const CertificateInfoType &type)
 {
 	const char *str = knownToShortName(type.known());
 	if(str)
-		return str;
+		return QString::fromLatin1(str);
 
-	QString id = type.id();
+	const QString id = type.id();
 	// is it an oid?
 	if(id[0].isDigit())
-		return QString("OID.") + id;
+		return QStringLiteral("OID.") + id;
 
-	return QString("qca.") + id;
+	return QStringLiteral("qca.") + id;
 }
 
 QString orderedToDNString(const CertificateInfoOrdered &in)
@@ -411,10 +411,10 @@ QString orderedToDNString(const CertificateInfoOrdered &in)
 		if(i.type().section() != CertificateInfoType::DN)
 			continue;
 
-		QString name = dnLabel(i.type());
-		parts += name + '=' + i.value();
+		const QString name = dnLabel(i.type());
+		parts += name + QLatin1Char('=') + i.value();
 	}
-	return parts.join(", ");
+	return parts.join(QStringLiteral(", "));
 }
 
 CertificateInfoOrdered orderedDNOnly(const CertificateInfoOrdered &in)
@@ -435,7 +435,7 @@ static QString baseCertName(const CertificateInfo &info)
 	{
 		str = info.value(Organization);
 		if(str.isEmpty())
-			str = "Unnamed";
+			str = QStringLiteral("Unnamed");
 	}
 	return str;
 }
@@ -451,7 +451,7 @@ static QList<int> findSameName(const QString &name, const QStringList &list)
 	return out;
 }
 
-static QString uniqueSubjectValue(const CertificateInfoType &type, const QList<int> items, const QList<Certificate> &certs, int i)
+static QString uniqueSubjectValue(const CertificateInfoType &type, const QList<int> &items, const QList<Certificate> &certs, int i)
 {
 	QStringList vals = certs[items[i]].subjectInfo().values(type);
 	if(!vals.isEmpty())
@@ -461,7 +461,7 @@ static QString uniqueSubjectValue(const CertificateInfoType &type, const QList<i
 			if(n == items[i])
 				continue;
 
-			QStringList other_vals = certs[n].subjectInfo().values(type);
+			const QStringList other_vals = certs[n].subjectInfo().values(type);
 			for(int k = 0; k < vals.count(); ++k)
 			{
 				if(other_vals.contains(vals[k]))
@@ -482,9 +482,9 @@ static QString uniqueSubjectValue(const CertificateInfoType &type, const QList<i
 	return QString();
 }
 
-static QString uniqueIssuerName(const QList<int> items, const QList<Certificate> &certs, int i)
+static QString uniqueIssuerName(const QList<int> &items, const QList<Certificate> &certs, int i)
 {
-	QString val = baseCertName(certs[items[i]].issuerInfo());
+	const QString val = baseCertName(certs[items[i]].issuerInfo());
 
 	bool found = false;
 	foreach(int n, items)
@@ -492,7 +492,7 @@ static QString uniqueIssuerName(const QList<int> items, const QList<Certificate>
 		if(n == items[i])
 			continue;
 
-		QString other_val = baseCertName(certs[n].issuerInfo());
+		const QString other_val = baseCertName(certs[n].issuerInfo());
 		if(other_val == val)
 		{
 			found = true;
@@ -529,12 +529,11 @@ static const char *constraintToString(const ConstraintType &type)
 		case TimeStamping:       return "TimeStamping";
 		case OCSPSigning:        return "OCSPSigning";
 	}
-	return 0;
+	return nullptr;
 }
 
-static QString uniqueConstraintValue(const ConstraintType &type, const QList<int> items, const QList<Certificate> &certs, int i)
+static QString uniqueConstraintValue(const ConstraintType &type, const QList<int> &items, const QList<Certificate> &certs, int i)
 {
-	ConstraintType val = type;
 	if(certs[items[i]].constraints().contains(type))
 	{
 		bool found = false;
@@ -544,7 +543,7 @@ static QString uniqueConstraintValue(const ConstraintType &type, const QList<int
 				continue;
 
 			Constraints other_vals = certs[n].constraints();
-			if(other_vals.contains(val))
+			if(other_vals.contains(type))
 			{
 				found = true;
 				break;
@@ -552,7 +551,7 @@ static QString uniqueConstraintValue(const ConstraintType &type, const QList<int
 		}
 
 		if(!found)
-			return QString(constraintToString(val));
+			return QString::fromLatin1(constraintToString(type));
 	}
 
 	return QString();
@@ -566,7 +565,7 @@ static QString makeUniqueName(const QList<int> &items, const QStringList &list, 
 	str = uniqueSubjectValue(Organization, items, certs, i);
 	if(!str.isEmpty())
 	{
-		name = list[items[i]] + QString(" of ") + str;
+		name = list[items[i]] + QStringLiteral(" of ") + str;
 		goto end;
 	}
 
@@ -574,7 +573,7 @@ static QString makeUniqueName(const QList<int> &items, const QStringList &list, 
 	str = uniqueSubjectValue(OrganizationalUnit, items, certs, i);
 	if(!str.isEmpty())
 	{
-		name = list[items[i]] + QString(" of ") + str;
+		name = list[items[i]] + QStringLiteral(" of ") + str;
 		goto end;
 	}
 
@@ -582,7 +581,7 @@ static QString makeUniqueName(const QList<int> &items, const QStringList &list, 
 	str = uniqueSubjectValue(Email, items, certs, i);
 	if(!str.isEmpty())
 	{
-		name = list[items[i]] + QString(" <") + str + '>';
+		name = list[items[i]] + QStringLiteral(" <") + str + QLatin1Char('>');
 		goto end;
 	}
 
@@ -590,7 +589,7 @@ static QString makeUniqueName(const QList<int> &items, const QStringList &list, 
 	str = uniqueSubjectValue(XMPP, items, certs, i);
 	if(!str.isEmpty())
 	{
-		name = list[items[i]] + QString(" <xmpp:") + str + '>';
+		name = list[items[i]] + QStringLiteral(" <xmpp:") + str + QLatin1Char('>');
 		goto end;
 	}
 
@@ -598,7 +597,7 @@ static QString makeUniqueName(const QList<int> &items, const QStringList &list, 
 	str = uniqueIssuerName(items, certs, i);
 	if(!str.isEmpty())
 	{
-		name = list[items[i]] + QString(" by ") + str;
+		name = list[items[i]] + QStringLiteral(" by ") + str;
 		goto end;
 	}
 
@@ -608,7 +607,7 @@ static QString makeUniqueName(const QList<int> &items, const QStringList &list, 
 	str = uniqueConstraintValue(DigitalSignature, items, certs, i);
 	if(!str.isEmpty())
 	{
-		name = list[items[i]] + QString(" for ") + str;
+		name = list[items[i]] + QStringLiteral(" for ") + str;
 		goto end;
 	}
 
@@ -616,7 +615,7 @@ static QString makeUniqueName(const QList<int> &items, const QStringList &list, 
 	str = uniqueConstraintValue(ClientAuth, items, certs, i);
 	if(!str.isEmpty())
 	{
-		name = list[items[i]] + QString(" for ") + str;
+		name = list[items[i]] + QStringLiteral(" for ") + str;
 		goto end;
 	}
 
@@ -624,7 +623,7 @@ static QString makeUniqueName(const QList<int> &items, const QStringList &list, 
 	str = uniqueConstraintValue(EmailProtection, items, certs, i);
 	if(!str.isEmpty())
 	{
-		name = list[items[i]] + QString(" for ") + str;
+		name = list[items[i]] + QStringLiteral(" for ") + str;
 		goto end;
 	}
 
@@ -632,7 +631,7 @@ static QString makeUniqueName(const QList<int> &items, const QStringList &list, 
 	str = uniqueConstraintValue(DataEncipherment, items, certs, i);
 	if(!str.isEmpty())
 	{
-		name = list[items[i]] + QString(" for ") + str;
+		name = list[items[i]] + QStringLiteral(" for ") + str;
 		goto end;
 	}
 
@@ -640,7 +639,7 @@ static QString makeUniqueName(const QList<int> &items, const QStringList &list, 
 	str = uniqueConstraintValue(EncipherOnly, items, certs, i);
 	if(!str.isEmpty())
 	{
-		name = list[items[i]] + QString(" for ") + str;
+		name = list[items[i]] + QStringLiteral(" for ") + str;
 		goto end;
 	}
 
@@ -648,7 +647,7 @@ static QString makeUniqueName(const QList<int> &items, const QStringList &list, 
 	str = uniqueConstraintValue(DecipherOnly, items, certs, i);
 	if(!str.isEmpty())
 	{
-		name = list[items[i]] + QString(" for ") + str;
+		name = list[items[i]] + QStringLiteral(" for ") + str;
 		goto end;
 	}
 
@@ -672,7 +671,7 @@ QStringList makeFriendlyNames(const QList<Certificate> &list)
 	foreach(const QString &name, names)
 	{
 		// anyone else using this name?
-		QList<int> items = findSameName(name, names);
+		const QList<int> items = findSameName(name, names);
 		if(items.count() > 1)
 		{
 			// don't save duplicate collisions
@@ -1200,9 +1199,9 @@ void CertificateOptions::setValidityPeriod(const QDateTime &start, const QDateTi
 static QByteArray ipaddr_str2bin(const QString &str)
 {
 	// ipv6
-	if(str.contains(':'))
+	if(str.contains(QLatin1Char(':')))
 	{
-		QStringList parts = str.split(':', QString::KeepEmptyParts);
+		const QStringList parts = str.split(QLatin1Char(':'), QString::KeepEmptyParts);
 		if(parts.count() < 3 || parts.count() > 8)
 			return QByteArray();
 
@@ -1243,7 +1242,7 @@ static QByteArray ipaddr_str2bin(const QString &str)
 			}
 			else
 			{
-				if(parts[n].indexOf('.') == -1)
+				if(parts[n].indexOf(QLatin1Char('.')) == -1)
 				{
 					bool ok;
 					int x = parts[n].toInt(&ok, 16);
@@ -1257,7 +1256,7 @@ static QByteArray ipaddr_str2bin(const QString &str)
 					if(n != parts.count() - 1)
 						return QByteArray();
 
-					QByteArray buf = ipaddr_str2bin(parts[n]);
+					const QByteArray buf = ipaddr_str2bin(parts[n]);
 					if(buf.isEmpty())
 						return QByteArray();
 
@@ -1272,9 +1271,9 @@ static QByteArray ipaddr_str2bin(const QString &str)
 
 		return ipv6;
 	}
-	else if(str.contains('.'))
+	else if(str.contains(QLatin1Char('.')))
 	{
-		QStringList parts = str.split('.', QString::KeepEmptyParts);
+		const QStringList parts = str.split(QLatin1Char('.'), QString::KeepEmptyParts);
 		if(parts.count() != 4)
 			return QByteArray();
 
@@ -1302,7 +1301,7 @@ static bool cert_match_domain(const QString &certname, const QString &acedomain)
 
 	// KSSL strips trailing dot, even though the dot is probably not
 	//   legal anyway. (compat)
-	if(name.length() > 0 && name[name.length()-1] == '.')
+	if(name.length() > 0 && name[name.length()-1] == QLatin1Char('.'))
 		name.truncate(name.length()-1);
 
 	// after our compatibility modifications, make sure the name isn't
@@ -1314,23 +1313,23 @@ static bool cert_match_domain(const QString &certname, const QString &acedomain)
 	name = name.toLower();
 
 	// ensure the cert field contains valid characters only
-	if(QRegExp("[^a-z0-9\\.\\*\\-]").indexIn(name) >= 0)
+	if(QRegExp(QLatin1String("[^a-z0-9\\.\\*\\-]")).indexIn(name) >= 0)
 		return false;
 
 	// hack into parts, and require at least 1 part
-	QStringList parts_name = name.split('.', QString::KeepEmptyParts);
+	const QStringList parts_name = name.split(QLatin1Char('.'), QString::KeepEmptyParts);
 	if(parts_name.isEmpty())
 		return false;
 
 	// KSSL checks to make sure the last two parts don't contain
 	//   wildcards.  I don't know where it is written that this
 	//   should be done, but for compat sake we'll do it.
-	if(parts_name[parts_name.count()-1].contains('*'))
+	if(parts_name[parts_name.count()-1].contains(QLatin1Char('*')))
 		return false;
-	if(parts_name.count() >= 2 && parts_name[parts_name.count()-2].contains('*'))
+	if(parts_name.count() >= 2 && parts_name[parts_name.count()-2].contains(QLatin1Char('*')))
 		return false;
 
-	QStringList parts_compare = acedomain.split('.', QString::KeepEmptyParts);
+	const QStringList parts_compare = acedomain.split(QLatin1Char('.'), QString::KeepEmptyParts);
 	if(parts_compare.isEmpty())
 		return false;
 
@@ -1383,7 +1382,7 @@ static bool cert_match_ipaddress(const QString &certname, const QByteArray &ipad
 	// KSSL accepts IPv6 in brackets, which is usually done for URIs, but
 	//   IMO sounds very strange for a certificate.  We'll follow this
 	//   behavior anyway. (compat)
-	if(name.length() >= 2 && name[0] == '[' && name[name.length()-1] == ']')
+	if(name.length() >= 2 && name[0] == QLatin1Char('[') && name[name.length()-1] == QLatin1Char(']'))
 		name = name.mid(1, name.length() - 2); // chop off brackets
 
 	// after our compatibility modifications, make sure the name isn't
@@ -1392,7 +1391,7 @@ static bool cert_match_ipaddress(const QString &certname, const QByteArray &ipad
 		return false;
 
 	// convert to binary form
-	QByteArray addr = ipaddr_str2bin(name);
+	const QByteArray addr = ipaddr_str2bin(name);
 	if(addr.isEmpty())
 		return false;
 
@@ -1431,13 +1430,13 @@ Certificate::Certificate()
 Certificate::Certificate(const QString &fileName)
 :d(new Private)
 {
-	*this = fromPEMFile(fileName, 0, QString());
+	*this = fromPEMFile(fileName, nullptr, QString());
 }
 
 Certificate::Certificate(const CertificateOptions &opts, const PrivateKey &key, const QString &provider)
 :d(new Private)
 {
-	CertContext *c = static_cast<CertContext *>(getContext("cert", provider));
+	CertContext *c = static_cast<CertContext *>(getContext(QStringLiteral("cert"), provider));
 	if(c->createSelfSigned(opts, *(static_cast<const PKeyContext *>(key.context()))))
 		change(c);
 	else
@@ -1576,7 +1575,7 @@ QByteArray Certificate::issuerKeyId() const
 
 Validity Certificate::validate(const CertificateCollection &trusted, const CertificateCollection &untrusted, UsageMode u, ValidateFlags vf) const
 {
-	QList<Certificate> issuers = trusted.certificates() + untrusted.certificates();
+	const QList<Certificate> issuers = trusted.certificates() + untrusted.certificates();
 	CertificateChain chain;
 	chain += *this;
 	Validity result;
@@ -1604,7 +1603,7 @@ bool Certificate::toPEMFile(const QString &fileName) const
 Certificate Certificate::fromDER(const QByteArray &a, ConvertResult *result, const QString &provider)
 {
 	Certificate c;
-	CertContext *cc = static_cast<CertContext *>(getContext("cert", provider));
+	CertContext *cc = static_cast<CertContext *>(getContext(QStringLiteral("cert"), provider));
 	ConvertResult r = cc->fromDER(a);
 	if(result)
 		*result = r;
@@ -1618,7 +1617,7 @@ Certificate Certificate::fromDER(const QByteArray &a, ConvertResult *result, con
 Certificate Certificate::fromPEM(const QString &s, ConvertResult *result, const QString &provider)
 {
 	Certificate c;
-	CertContext *cc = static_cast<CertContext *>(getContext("cert", provider));
+	CertContext *cc = static_cast<CertContext *>(getContext(QStringLiteral("cert"), provider));
 	ConvertResult r = cc->fromPEM(s);
 	if(result)
 		*result = r;
@@ -1645,28 +1644,19 @@ Certificate Certificate::fromPEMFile(const QString &fileName, ConvertResult *res
 // for all else, check in dNSName, then commonName
 bool Certificate::matchesHostName(const QString &host) const
 {
-	QByteArray ipaddr = ipaddr_str2bin(host);
+	const QByteArray ipaddr = ipaddr_str2bin(host);
 	if(!ipaddr.isEmpty()) // ip address
 	{
-		// check iPAddress
-		foreach(const QString &s, subjectInfo().values(IPAddress))
+		// check iPAddress, dNSName, commonName
+		const CertificateInfoOrdered subjectInfo = subjectInfoOrdered();
+		for(const CertificateInfoPair &p : subjectInfo)
 		{
-			if(cert_match_ipaddress(s, ipaddr))
-				return true;
-		}
-
-		// check dNSName
-		foreach(const QString &s, subjectInfo().values(DNS))
-		{
-			if(cert_match_ipaddress(s, ipaddr))
-				return true;
-		}
-
-		// check commonName
-		foreach(const QString &s, subjectInfo().values(CommonName))
-		{
-			if(cert_match_ipaddress(s, ipaddr))
-				return true;
+			const CertificateInfoType type = p.type();
+			if (type == IPAddress || type == DNS || type == CommonName)
+			{
+				if(cert_match_ipaddress(p.value(), ipaddr))
+					return true;
+			}
 		}
 	}
 	else // domain
@@ -1678,29 +1668,27 @@ bool Certificate::matchesHostName(const QString &host) const
 		name = QString::fromLatin1(QUrl::toAce(name));
 
 		// don't allow wildcards in the comparison host
-		if(name.contains('*'))
+		if(name.contains(QLatin1Char('*')))
 			return false;
 
 		// strip out trailing dot
-		if(name.length() > 0 && name[name.length()-1] == '.')
+		if(name.length() > 0 && name[name.length()-1] == QLatin1Char('.'))
 			name.truncate(name.length()-1);
 
 		// make sure the name is not empty after our modifications
 		if(name.isEmpty())
 			return false;
 
-		// check dNSName
-		foreach(const QString &s, subjectInfo().values(DNS))
+		// check dNSName, commonName
+		const CertificateInfoOrdered subjectInfo = subjectInfoOrdered();
+		for(const CertificateInfoPair &p : subjectInfo)
 		{
-			if(cert_match_domain(s, name))
-				return true;
-		}
-
-		// check commonName
-		foreach(const QString &s, subjectInfo().values(CommonName))
-		{
-			if(cert_match_domain(s, name))
-				return true;
+			const CertificateInfoType type = p.type();
+			if (type == DNS || type == CommonName)
+			{
+				if(cert_match_domain(p.value(), name))
+					return true;
+			}
 		}
 	}
 
@@ -1825,13 +1813,13 @@ CertificateRequest::CertificateRequest()
 CertificateRequest::CertificateRequest(const QString &fileName)
 :d(new Private)
 {
-	*this = fromPEMFile(fileName, 0, QString());
+	*this = fromPEMFile(fileName, nullptr, QString());
 }
 
 CertificateRequest::CertificateRequest(const CertificateOptions &opts, const PrivateKey &key, const QString &provider)
 :d(new Private)
 {
-	CSRContext *c = static_cast<CSRContext *>(getContext("csr", provider));
+	CSRContext *c = static_cast<CSRContext *>(getContext(QStringLiteral("csr"), provider));
 	if(c->createRequest(opts, *(static_cast<const PKeyContext *>(key.context()))))
 		change(c);
 	else
@@ -1861,7 +1849,7 @@ bool CertificateRequest::isNull() const
 
 bool CertificateRequest::canUseFormat(CertificateRequestFormat f, const QString &provider)
 {
-	CSRContext *c = static_cast<CSRContext *>(getContext("csr", provider));
+	CSRContext *c = static_cast<CSRContext *>(getContext(QStringLiteral("csr"), provider));
 	bool ok = c->canUseFormat(f);
 	delete c;
 	return ok;
@@ -1956,7 +1944,7 @@ bool CertificateRequest::toPEMFile(const QString &fileName) const
 CertificateRequest CertificateRequest::fromDER(const QByteArray &a, ConvertResult *result, const QString &provider)
 {
 	CertificateRequest c;
-	CSRContext *csr = static_cast<CSRContext *>(getContext("csr", provider));
+	CSRContext *csr = static_cast<CSRContext *>(getContext(QStringLiteral("csr"), provider));
 	ConvertResult r = csr->fromDER(a);
 	if(result)
 		*result = r;
@@ -1970,7 +1958,7 @@ CertificateRequest CertificateRequest::fromDER(const QByteArray &a, ConvertResul
 CertificateRequest CertificateRequest::fromPEM(const QString &s, ConvertResult *result, const QString &provider)
 {
 	CertificateRequest c;
-	CSRContext *csr = static_cast<CSRContext *>(getContext("csr", provider));
+	CSRContext *csr = static_cast<CSRContext *>(getContext(QStringLiteral("csr"), provider));
 	ConvertResult r = csr->fromPEM(s);
 	if(result)
 		*result = r;
@@ -2001,7 +1989,7 @@ QString CertificateRequest::toString() const
 CertificateRequest CertificateRequest::fromString(const QString &s, ConvertResult *result, const QString &provider)
 {
 	CertificateRequest c;
-	CSRContext *csr = static_cast<CSRContext *>(getContext("csr", provider));
+	CSRContext *csr = static_cast<CSRContext *>(getContext(QStringLiteral("csr"), provider));
 	ConvertResult r = csr->fromSPKAC(s);
 	if(result)
 		*result = r;
@@ -2033,7 +2021,7 @@ CRLEntry::CRLEntry(const Certificate &c, Reason r)
 	_reason = r;
 }
 
-CRLEntry::CRLEntry(const BigInteger serial, const QDateTime &time, Reason r)
+CRLEntry::CRLEntry(const BigInteger serial, const QDateTime &time, Reason r) // clazy:exclude=function-args-by-ref NOLINT(performance-unnecessary-value-param) TODO make serial const & when we break ABI
 {
 	_serial = serial;
 	_time = time;
@@ -2221,7 +2209,7 @@ bool CRL::operator==(const CRL &otherCrl) const
 CRL CRL::fromDER(const QByteArray &a, ConvertResult *result, const QString &provider)
 {
 	CRL c;
-	CRLContext *cc = static_cast<CRLContext *>(getContext("crl", provider));
+	CRLContext *cc = static_cast<CRLContext *>(getContext(QStringLiteral("crl"), provider));
 	ConvertResult r = cc->fromDER(a);
 	if(result)
 		*result = r;
@@ -2235,7 +2223,7 @@ CRL CRL::fromDER(const QByteArray &a, ConvertResult *result, const QString &prov
 CRL CRL::fromPEM(const QString &s, ConvertResult *result, const QString &provider)
 {
 	CRL c;
-	CRLContext *cc = static_cast<CRLContext *>(getContext("crl", provider));
+	CRLContext *cc = static_cast<CRLContext *>(getContext(QStringLiteral("crl"), provider));
 	ConvertResult r = cc->fromPEM(s);
 	if(result)
 		*result = r;
@@ -2282,29 +2270,29 @@ static QString readNextPem(QTextStream *ts, bool *isCRL)
 	bool done = false;
 	while(!ts->atEnd())
 	{
-		QString line = ts->readLine();
+		const QString line = ts->readLine();
 		if(!found)
 		{
-			if(line.startsWith("-----BEGIN "))
+			if(line.startsWith(QLatin1String("-----BEGIN ")))
 			{
-				if(line.contains("CERTIFICATE"))
+				if(line.contains(QLatin1String("CERTIFICATE")))
 				{
 					found = true;
-					pem += line + '\n';
+					pem += line + QLatin1Char('\n');
 					crl = false;
 				}
-				else if(line.contains("CRL"))
+				else if(line.contains(QLatin1String("CRL")))
 				{
 					found = true;
-					pem += line + '\n';
+					pem += line + QLatin1Char('\n');
 					crl = true;
 				}
 			}
 		}
 		else
 		{
-			pem += line + '\n';
-			if(line.startsWith("-----END "))
+			pem += line + QLatin1Char('\n');
+			if(line.startsWith(QLatin1String("-----END ")))
 			{
 				done = true;
 				break;
@@ -2406,7 +2394,7 @@ bool CertificateCollection::toFlatTextFile(const QString &fileName)
 
 bool CertificateCollection::toPKCS7File(const QString &fileName, const QString &provider)
 {
-	CertCollectionContext *col = static_cast<CertCollectionContext *>(getContext("certcollection", provider));
+	CertCollectionContext *col = static_cast<CertCollectionContext *>(getContext(QStringLiteral("certcollection"), provider));
 
 	QList<CertContext*> cert_list;
 	QList<CRLContext*> crl_list;
@@ -2422,7 +2410,7 @@ bool CertificateCollection::toPKCS7File(const QString &fileName, const QString &
 		crl_list += c;
 	}
 
-	QByteArray result = col->toPKCS7(cert_list, crl_list);
+	const QByteArray result = col->toPKCS7(cert_list, crl_list);
 	delete col;
 
 	return arrayToFile(fileName, result);
@@ -2440,7 +2428,7 @@ CertificateCollection CertificateCollection::fromFlatTextFile(const QString &fil
 
 	CertificateCollection certs;
 	QTextStream ts(&f);
-	while(1)
+	while(true)
 	{
 		bool isCRL = false;
 		QString pem = readNextPem(&ts, &isCRL);
@@ -2448,13 +2436,13 @@ CertificateCollection CertificateCollection::fromFlatTextFile(const QString &fil
 			break;
 		if(isCRL)
 		{
-			CRL c = CRL::fromPEM(pem, 0, provider);
+			CRL c = CRL::fromPEM(pem, nullptr, provider);
 			if(!c.isNull())
 				certs.addCRL(c);
 		}
 		else
 		{
-			Certificate c = Certificate::fromPEM(pem, 0, provider);
+			Certificate c = Certificate::fromPEM(pem, nullptr, provider);
 			if(!c.isNull())
 				certs.addCertificate(c);
 		}
@@ -2480,7 +2468,7 @@ CertificateCollection CertificateCollection::fromPKCS7File(const QString &fileNa
 
 	QList<CertContext*> cert_list;
 	QList<CRLContext*> crl_list;
-	CertCollectionContext *col = static_cast<CertCollectionContext *>(getContext("certcollection", provider));
+	CertCollectionContext *col = static_cast<CertCollectionContext *>(getContext(QStringLiteral("certcollection"), provider));
 	ConvertResult r = col->fromPKCS7(der, &cert_list, &crl_list);
 	delete col;
 
@@ -2509,7 +2497,7 @@ CertificateCollection CertificateCollection::fromPKCS7File(const QString &fileNa
 // CertificateAuthority
 //----------------------------------------------------------------------------
 CertificateAuthority::CertificateAuthority(const Certificate &cert, const PrivateKey &key, const QString &provider)
-:Algorithm("ca", provider)
+:Algorithm(QStringLiteral("ca"), provider)
 {
 	static_cast<CAContext *>(context())->setup(*(static_cast<const CertContext *>(cert.context())), *(static_cast<const PKeyContext *>(key.context())));
 }
@@ -2582,7 +2570,7 @@ KeyBundle::KeyBundle()
 KeyBundle::KeyBundle(const QString &fileName, const SecureArray &passphrase)
 :d(new Private)
 {
-	*this = fromFile(fileName, passphrase, 0, QString());
+	*this = fromFile(fileName, passphrase, nullptr, QString());
 }
 
 KeyBundle::KeyBundle(const KeyBundle &from)
@@ -2633,12 +2621,12 @@ void KeyBundle::setCertificateChainAndKey(const CertificateChain &c, const Priva
 
 QByteArray KeyBundle::toArray(const SecureArray &passphrase, const QString &provider) const
 {
-	PKCS12Context *pix = static_cast<PKCS12Context *>(getContext("pkcs12", provider));
+	PKCS12Context *pix = static_cast<PKCS12Context *>(getContext(QStringLiteral("pkcs12"), provider));
 
 	QList<const CertContext*> list;
 	for(int n = 0; n < d->chain.count(); ++n)
 		list.append(static_cast<const CertContext *>(d->chain[n].context()));
-	QByteArray buf = pix->toPKCS12(d->name, list, *(static_cast<const PKeyContext *>(d->key.context())), passphrase);
+	const QByteArray buf = pix->toPKCS12(d->name, list, *(static_cast<const PKeyContext *>(d->key.context())), passphrase);
 	delete pix;
 
 	return buf;
@@ -2667,7 +2655,7 @@ KeyBundle KeyBundle::fromFile(const QString &fileName, const SecureArray &passph
 	}
 
 	KeyBundle bundle;
-	get_pkcs12_der(der, fileName, 0, passphrase, result, provider, &bundle.d->name, &bundle.d->chain, &bundle.d->key);
+	get_pkcs12_der(der, fileName, nullptr, passphrase, result, provider, &bundle.d->name, &bundle.d->chain, &bundle.d->key);
 	return bundle;
 }
 
@@ -2680,7 +2668,7 @@ PGPKey::PGPKey()
 
 PGPKey::PGPKey(const QString &fileName)
 {
-	*this = fromFile(fileName, 0, QString());
+	*this = fromFile(fileName, nullptr, QString());
 }
 
 PGPKey::PGPKey(const PGPKey &from)
@@ -2766,7 +2754,7 @@ bool PGPKey::toFile(const QString &fileName) const
 PGPKey PGPKey::fromArray(const QByteArray &a, ConvertResult *result, const QString &provider)
 {
 	PGPKey k;
-	PGPKeyContext *kc = static_cast<PGPKeyContext *>(getContext("pgpkey", provider));
+	PGPKeyContext *kc = static_cast<PGPKeyContext *>(getContext(QStringLiteral("pgpkey"), provider));
 	ConvertResult r = kc->fromBinary(a);
 	if(result)
 		*result = r;
@@ -2780,7 +2768,7 @@ PGPKey PGPKey::fromArray(const QByteArray &a, ConvertResult *result, const QStri
 PGPKey PGPKey::fromString(const QString &s, ConvertResult *result, const QString &provider)
 {
 	PGPKey k;
-	PGPKeyContext *kc = static_cast<PGPKeyContext *>(getContext("pgpkey", provider));
+	PGPKeyContext *kc = static_cast<PGPKeyContext *>(getContext(QStringLiteral("pgpkey"), provider));
 	ConvertResult r = kc->fromAscii(s);
 	if(result)
 		*result = r;
@@ -2832,12 +2820,12 @@ public:
 	In in;
 	Out out;
 
-	KeyLoaderThread(QObject *parent = 0) : QThread(parent)
+	KeyLoaderThread(QObject *parent = nullptr) : QThread(parent)
 	{
 	}
 
 protected:
-	virtual void run()
+	void run() override
 	{
 		if(in.type == PKPEMFile)
 			out.privateKey = PrivateKey::fromPEMFile(in.fileName, SecureArray(), &out.convertResult);
@@ -2879,17 +2867,17 @@ public:
 		active = true;
 		thread = new KeyLoaderThread(this);
 		// used queued for signal-safety
-		connect(thread, SIGNAL(finished()), SLOT(thread_finished()), Qt::QueuedConnection);
+		connect(thread, &KeyLoaderThread::finished, this, &KeyLoader::Private::thread_finished, Qt::QueuedConnection);
 		thread->in = in;
 		thread->start();
 	}
 
-private slots:
+private Q_SLOTS:
 	void thread_finished()
 	{
 		out = thread->out;
 		delete thread;
-		thread = 0;
+		thread = nullptr;
 		active = false;
 
 		emit q->finished();

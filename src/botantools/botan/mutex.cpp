@@ -31,7 +31,7 @@ namespace QCA { // WRAPNS_LINE
 *************************************************/
 
 } // WRAPNS_LINE
-#include <stdlib.h>
+#include <cstdlib>
 namespace QCA { // WRAPNS_LINE
 } // WRAPNS_LINE
 #include <botan/mutex.h>
@@ -101,14 +101,14 @@ Mutex* Default_Mutex_Factory::make()
                                  "Mutex is already " + where + "ed") {}
             };
 
-         void lock()
+         void lock() override
             {
             if(locked)
                throw Mutex_State_Error("lock");
             locked = true;
             }
 
-         void unlock()
+         void unlock() override
             {
             if(!locked)
                throw Mutex_State_Error("unlock");

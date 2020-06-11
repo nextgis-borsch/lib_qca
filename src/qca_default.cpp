@@ -87,15 +87,16 @@ public:
 //----------------------------------------------------------------------------
 class DefaultRandomContext : public RandomContext
 {
+    Q_OBJECT
 public:
 	DefaultRandomContext(Provider *p) : RandomContext(p) {}
 
-	virtual Provider::Context *clone() const
+	Provider::Context *clone() const override
 	{
 		return new DefaultRandomContext(provider());
 	}
 
-	virtual SecureArray nextBytes(int size)
+	SecureArray nextBytes(int size) override
 	{
 		SecureArray buf(size);
 		for(int n = 0; n < (int)buf.size(); ++n)
@@ -187,17 +188,6 @@ struct md5_state_t {
         memset(count, 0, 2 * sizeof(md5_word_t));
         memset(abcd, 0, 4 * sizeof(md5_word_t));
         memset(buf, 0, 64 * sizeof(md5_byte_t));
-    }
-
-    md5_state_t(const md5_state_t &from)
-    {
-        *this = from;
-    }
-
-    md5_state_t & operator=(const md5_state_t &from)
-    {
-        *this = from;
-        return *this;
     }
 };
 
@@ -311,7 +301,7 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
 			* data without copying it. On arm do copying always
 			*/
 #ifndef Q_PROCESSOR_ARM
-			if (!((data - static_cast<const md5_byte_t*>(0)) & 3)) {
+			if (!((data - static_cast<const md5_byte_t*>(nullptr)) & 3)) {
 				/* data are properly aligned */
 				X = reinterpret_cast<const md5_word_t*>(data);
 			} else
@@ -512,31 +502,32 @@ md5_finish(md5_state_t *pms, md5_byte_t digest[16])
 
 class DefaultMD5Context : public HashContext
 {
+    Q_OBJECT
 public:
-	DefaultMD5Context(Provider *p) : HashContext(p, "md5")
+	DefaultMD5Context(Provider *p) : HashContext(p, QStringLiteral("md5"))
 	{
 		clear();
 	}
 
-	virtual Provider::Context *clone() const
+	Provider::Context *clone() const override
 	{
 		return new DefaultMD5Context(*this);
 	}
 
-	virtual void clear()
+	void clear() override
 	{
 		secure = true;
 		md5_init(&md5);
 	}
 
-	virtual void update(const MemoryRegion &in)
+	void update(const MemoryRegion &in) override
 	{
 		if(!in.isSecure())
 			secure = false;
 		md5_append(&md5, (const md5_byte_t *)in.data(), in.size());
 	}
 
-	virtual MemoryRegion final()
+	MemoryRegion final() override
 	{
 		if(secure)
 		{
@@ -589,17 +580,6 @@ struct SHA1_CONTEXT
 		memset(count, 0, 2 * sizeof(quint32));
 		memset(buffer, 0, 64 * sizeof(unsigned char));
 	}
-
-	SHA1_CONTEXT(const SHA1_CONTEXT &from)
-	{
-		*this = from;
-	}
-
-	SHA1_CONTEXT & operator=(const SHA1_CONTEXT &from)
-	{
-		*this = from;
-		return *this;
-	}
 };
 
 typedef union {
@@ -609,6 +589,7 @@ typedef union {
 
 class DefaultSHA1Context : public HashContext
 {
+    Q_OBJECT
 public:
 	SHA1_CONTEXT _context;
 #ifdef Q_PROCESSOR_ARM
@@ -618,30 +599,30 @@ public:
 #endif
 	bool secure;
 
-	DefaultSHA1Context(Provider *p) : HashContext(p, "sha1")
+	DefaultSHA1Context(Provider *p) : HashContext(p, QStringLiteral("sha1"))
 	{
 		clear();
 	}
 
-	virtual Provider::Context *clone() const
+	Provider::Context *clone() const override
 	{
 		return new DefaultSHA1Context(*this);
 	}
 
-	virtual void clear()
+	void clear() override
 	{
 		secure = true;
 		sha1_init(&_context);
 	}
 
-	virtual void update(const MemoryRegion &in)
+	void update(const MemoryRegion &in) override
 	{
 		if(!in.isSecure())
 			secure = false;
 		sha1_update(&_context, (unsigned char *)in.data(), (unsigned int)in.size());
 	}
 
-	virtual MemoryRegion final()
+	MemoryRegion final() override
 	{
 		if(secure)
 		{
@@ -796,18 +777,18 @@ public:
 static QString escape_string(const QString &in)
 {
 	QString out;
-	for(int n = 0; n < in.length(); ++n)
+	for(const QChar &c : in)
 	{
-		if(in[n] == '\\')
-			out += "\\\\";
-		else if(in[n] == ':')
-			out += "\\c";
-		else if(in[n] == ',')
-			out += "\\o";
-		else if(in[n] == '\n')
-			out += "\\n";
+		if(c == QLatin1Char('\\'))
+			out += QLatin1String("\\\\");
+		else if(c == QLatin1Char(':'))
+			out += QLatin1String("\\c");
+		else if(c == QLatin1Char(','))
+			out += QLatin1String("\\o");
+		else if(c == QLatin1Char('\n'))
+			out += QLatin1String("\\n");
 		else
-			out += in[n];
+			out += c;
 	}
 	return out;
 }
@@ -817,19 +798,19 @@ static bool unescape_string(const QString &in, QString *_out)
 	QString out;
 	for(int n = 0; n < in.length(); ++n)
 	{
-		if(in[n] == '\\')
+		if(in[n] == QLatin1Char('\\'))
 		{
 			if(n + 1 >= in.length())
 				return false;
 
-			if(in[n + 1] == '\\')
-				out += '\\';
-			else if(in[n + 1] == 'c')
-				out += ':';
-			else if(in[n + 1] == 'o')
-				out += ',';
-			else if(in[n + 1] == 'n')
-				out += '\n';
+			if(in[n + 1] == QLatin1Char('\\'))
+				out += QLatin1Char('\\');
+			else if(in[n + 1] == QLatin1Char('c'))
+				out += QLatin1Char(':');
+			else if(in[n + 1] == QLatin1Char('o'))
+				out += QLatin1Char(',');
+			else if(in[n + 1] == QLatin1Char('n'))
+				out += QLatin1Char('\n');
 			else
 				return false;
 			++n;
@@ -846,13 +827,13 @@ static QString escape_stringlist(const QStringList &in)
 	QStringList list;
 	for(int n = 0; n < in.count(); ++n)
 		list += escape_string(in[n]);
-	return list.join(":");
+	return list.join(QStringLiteral(":"));
 }
 
 static bool unescape_stringlist(const QString &in, QStringList *_out)
 {
 	QStringList out;
-	QStringList list = in.split(':');
+	const QStringList list = in.split(QLatin1Char(':'));
 	for(int n = 0; n < list.count(); ++n)
 	{
 		QString str;
@@ -875,7 +856,7 @@ static bool unescape_stringlist(const QString &in, QStringList *_out)
 static QString entry_serialize(const QString &storeId, const QString &storeName, const QString &entryId, const QString &entryName, const QString &entryType, const QString &data)
 {
 	QStringList out;
-	out += "qca_def";
+	out += QStringLiteral("qca_def");
 	out += storeId;
 	out += storeName;
 	out += entryId;
@@ -892,7 +873,7 @@ static bool entry_deserialize(const QString &in, QString *storeId, QString *stor
 		return false;
 	if(list.count() != 7)
 		return false;
-	if(list[0] != "qca_def")
+	if(list[0] != QLatin1String("qca_def"))
 		return false;
 	*storeId   = list[1];
 	*storeName = list[2];
@@ -905,6 +886,7 @@ static bool entry_deserialize(const QString &in, QString *storeId, QString *stor
 
 class DefaultKeyStoreEntry : public KeyStoreEntryContext
 {
+    Q_OBJECT
 public:
 	KeyStoreEntry::Type _type;
 	QString _id, _name, _storeId, _storeName;
@@ -928,47 +910,47 @@ public:
 		_crl = crl;
 	}
 
-	virtual Provider::Context *clone() const
+	Provider::Context *clone() const override
 	{
 		return new DefaultKeyStoreEntry(*this);
 	}
 
-	virtual KeyStoreEntry::Type type() const
+	KeyStoreEntry::Type type() const override
 	{
 		return _type;
 	}
 
-	virtual QString id() const
+	QString id() const override
 	{
 		return _id;
 	}
 
-	virtual QString name() const
+	QString name() const override
 	{
 		return _name;
 	}
 
-	virtual QString storeId() const
+	QString storeId() const override
 	{
 		return _storeId;
 	}
 
-	virtual QString storeName() const
+	QString storeName() const override
 	{
 		return _storeName;
 	}
 
-	virtual Certificate certificate() const
+	Certificate certificate() const override
 	{
 		return _cert;
 	}
 
-	virtual CRL crl() const
+	CRL crl() const override
 	{
 		return _crl;
 	}
 
-	virtual QString serialize() const
+	QString serialize() const override
 	{
 		if(_serialized.isEmpty())
 		{
@@ -977,12 +959,12 @@ public:
 
 			if(_type == KeyStoreEntry::TypeCertificate)
 			{
-				typestr = "cert";
+				typestr = QStringLiteral("cert");
 				datastr = Base64().arrayToString(_cert.toDER());
 			}
 			else
 			{
-				typestr = "crl";
+				typestr = QStringLiteral("crl");
 				datastr = Base64().arrayToString(_crl.toDER());
 			}
 
@@ -998,32 +980,32 @@ public:
 
 		if(entry_deserialize(in, &storeId, &storeName, &id, &name, &typestr, &datastr))
 		{
-			QByteArray data = Base64().stringToArray(datastr).toByteArray();
+			const QByteArray data = Base64().stringToArray(datastr).toByteArray();
 			DefaultKeyStoreEntry *c;
 
-			if(typestr == "cert")
+			if(typestr == QLatin1String("cert"))
 			{
 				Certificate cert = Certificate::fromDER(data);
 				if(cert.isNull())
-					return 0;
+					return nullptr;
 				c = new DefaultKeyStoreEntry(cert, storeId, storeName, provider);
 			}
-			else if(typestr == "crl")
+			else if(typestr == QLatin1String("crl"))
 			{
 				CRL crl = CRL::fromDER(data);
 				if(crl.isNull())
-					return 0;
+					return nullptr;
 				c = new DefaultKeyStoreEntry(crl, storeId, storeName, provider);
 			}
 			else
-				return 0;
+				return nullptr;
 
 			c->_id = id;
 			c->_name = name;
 			c->_serialized = in;
 			return c;
 		}
-		return 0;
+		return nullptr;
 	}
 
 	QString simpleId() const
@@ -1063,23 +1045,23 @@ public:
 	{
 	}
 
-	~DefaultKeyStoreList()
+	~DefaultKeyStoreList() override
 	{
 	}
 
-	virtual Provider::Context *clone() const
+	Provider::Context *clone() const override
 	{
-		return 0;
+		return nullptr;
 	}
 
-	virtual void start()
+	void start() override
 	{
 		x509_supported = false;
 
 		QMetaObject::invokeMethod(this, "busyEnd", Qt::QueuedConnection);
 	}
 
-	virtual QList<int> keyStores()
+	QList<int> keyStores() override
 	{
 		if(!x509_supported)
 		{
@@ -1103,22 +1085,22 @@ public:
 		return list;
 	}
 
-	virtual KeyStore::Type type(int) const
+	KeyStore::Type type(int) const override
 	{
 		return KeyStore::System;
 	}
 
-	virtual QString storeId(int) const
+	QString storeId(int) const override
 	{
-		return "qca-default-systemstore";
+		return QStringLiteral("qca-default-systemstore");
 	}
 
-	virtual QString name(int) const
+	QString name(int) const override
 	{
-		return "System Trusted Certificates";
+		return QStringLiteral("System Trusted Certificates");
 	}
 
-	virtual QList<KeyStoreEntry::Type> entryTypes(int) const
+	QList<KeyStoreEntry::Type> entryTypes(int) const override
 	{
 		QList<KeyStoreEntry::Type> list;
 		list += KeyStoreEntry::TypeCertificate;
@@ -1126,7 +1108,7 @@ public:
 		return list;
 	}
 
-	virtual QList<KeyStoreEntryContext*> entryList(int)
+	QList<KeyStoreEntryContext*> entryList(int) override
 	{
 		QList<KeyStoreEntryContext*> out;
 
@@ -1143,7 +1125,7 @@ public:
 			crls += col.crls();
 		}
 
-		QString roots = shared->roots_file();
+		const QString roots = shared->roots_file();
 		if(!roots.isEmpty())
 		{
 			CertificateCollection col = CertificateCollection::fromFlatTextFile(roots);
@@ -1152,7 +1134,7 @@ public:
 		}
 
 #ifdef FRIENDLY_NAMES
-		QStringList names = makeFriendlyNames(certs);
+		const QStringList names = makeFriendlyNames(certs);
 #endif
 		for(int n = 0; n < certs.count(); ++n)
 		{
@@ -1177,7 +1159,7 @@ public:
 		return out;
 	}
 
-	virtual KeyStoreEntryContext *entryPassive(const QString &serialized)
+	KeyStoreEntryContext *entryPassive(const QString &serialized) override
 	{
 		return DefaultKeyStoreEntry::deserialize(serialized, provider());
 	}
@@ -1189,7 +1171,7 @@ public:
 static bool unescape_config_stringlist(const QString &in, QStringList *_out)
 {
 	QStringList out;
-	QStringList list = in.split(',');
+	const QStringList list = in.split(QLatin1Char(','));
 	for(int n = 0; n < list.count(); ++n)
 	{
 		QString str;
@@ -1206,72 +1188,72 @@ class DefaultProvider : public Provider
 public:
 	DefaultShared shared;
 
-	virtual void init()
+	void init() override
 	{
-		QDateTime now = QDateTime::currentDateTime();
+		const QDateTime now = QDateTime::currentDateTime();
 
 		uint t = now.toTime_t();
-	        if(now.time().msec() > 0)
+		if(now.time().msec() > 0)
 			t /= now.time().msec();
 		qsrand(t);
 	}
 
-	virtual int version() const
+	int version() const override
 	{
 		return QCA_VERSION;
 	}
 
-	virtual int qcaVersion() const
+	int qcaVersion() const override
 	{
 		return QCA_VERSION;
 	}
 
-	virtual QString name() const
+	QString name() const override
 	{
-		return "default";
+		return QStringLiteral("default");
 	}
 
-	virtual QStringList features() const
+	QStringList features() const override
 	{
 		QStringList list;
-		list += "random";
-		list += "md5";
-		list += "sha1";
-		list += "keystorelist";
+		list += QStringLiteral("random");
+		list += QStringLiteral("md5");
+		list += QStringLiteral("sha1");
+		list += QStringLiteral("keystorelist");
 		return list;
 	}
 
-	virtual Provider::Context *createContext(const QString &type)
+	Provider::Context *createContext(const QString &type) override
 	{
-		if(type == "random")
+		if(type == QLatin1String("random"))
 			return new DefaultRandomContext(this);
-		else if(type == "md5")
+		else if(type == QLatin1String("md5"))
 			return new DefaultMD5Context(this);
-		else if(type == "sha1")
+		else if(type == QLatin1String("sha1"))
 			return new DefaultSHA1Context(this);
-		else if(type == "keystorelist")
+		else if(type == QLatin1String("keystorelist"))
 			return new DefaultKeyStoreList(this, &shared);
 		else
-			return 0;
+			return nullptr;
 	}
 
-	virtual QVariantMap defaultConfig() const
+	QVariantMap defaultConfig() const override
 	{
 		QVariantMap config;
-		config["formtype"] = "http://affinix.com/qca/forms/default#1.0";
-		config["use_system"] = true;
-		config["roots_file"] = QString();
-		config["skip_plugins"] = QString();
-		config["plugin_priorities"] = QString();
+		config[QStringLiteral("formtype")] = QStringLiteral("http://affinix.com/qca/forms/default#1.0");
+		config[QStringLiteral("use_system")] = true;
+		config[QStringLiteral("roots_file")] = QString();
+		config[QStringLiteral("skip_plugins")] = QString();
+		config[QStringLiteral("plugin_priorities")] = QString();
 		return config;
 	}
 
-	virtual void configChanged(const QVariantMap &config)
+	void configChanged(const QVariantMap &config) override
 	{
-		bool use_system = config["use_system"].toBool();
-		QString roots_file = config["roots_file"].toString();
-		QString skip_plugins_str = config["skip_plugins"].toString();
-		QString plugin_priorities_str = config["plugin_priorities"].toString();
+		const bool use_system = config[QStringLiteral("use_system")].toBool();
+		const QString roots_file = config[QStringLiteral("roots_file")].toString();
+		const QString skip_plugins_str = config[QStringLiteral("skip_plugins")].toString();
+		const QString plugin_priorities_str = config[QStringLiteral("plugin_priorities")].toString();
 
 		QStringList tmp;
 
@@ -1288,10 +1270,10 @@ public:
 			QString &s = plugin_priorities[n];
 
 			// make sure the entry ends with ":number"
-			int x = s.indexOf(':');
+			int x = s.indexOf(QLatin1Char(':'));
 			bool ok = false;
 			if(x != -1)
-				s.mid(x + 1).toInt(&ok);
+				s.midRef(x + 1).toInt(&ok);
 			if(!ok)
 			{
 				plugin_priorities.removeAt(n);

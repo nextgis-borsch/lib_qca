@@ -29,7 +29,7 @@ namespace gpgQCAPlugin
 
 Q_GLOBAL_STATIC(QMutex, ksl_mutex)
 
-static MyKeyStoreList *keyStoreList = 0;
+static MyKeyStoreList *keyStoreList = nullptr;
 MyKeyStoreList::MyKeyStoreList(Provider *p)
 	: KeyStoreListContext(p)
 	, initialized(false)
@@ -41,24 +41,24 @@ MyKeyStoreList::MyKeyStoreList(Provider *p)
 	QMutexLocker locker(ksl_mutex());
 	keyStoreList = this;
 
-	connect(&gpg, SIGNAL(finished()), SLOT(gpg_finished()));
-	connect(&ringWatch, SIGNAL(changed(const QString &)), SLOT(ring_changed(const QString &)));
+	connect(&gpg, &GpgOp::finished, this, &MyKeyStoreList::gpg_finished);
+	connect(&ringWatch, &RingWatch::changed, this, &MyKeyStoreList::ring_changed);
 }
 
 MyKeyStoreList::~MyKeyStoreList()
 {
 	QMutexLocker locker(ksl_mutex());
-	keyStoreList = 0;
+	keyStoreList = nullptr;
 }
 
 Provider::Context *MyKeyStoreList::clone() const
 {
-	return 0;
+	return nullptr;
 }
 
 QString MyKeyStoreList::name(int) const
 {
-	return "GnuPG Keyring";
+	return QStringLiteral("GnuPG Keyring");
 }
 
 KeyStore::Type MyKeyStoreList::type(int) const
@@ -68,7 +68,7 @@ KeyStore::Type MyKeyStoreList::type(int) const
 
 QString MyKeyStoreList::storeId(int) const
 {
-	return "qca-gnupg";
+	return QStringLiteral("qca-gnupg");
 }
 
 QList<int> MyKeyStoreList::keyStores()
@@ -114,7 +114,7 @@ QList<KeyStoreEntryContext*> MyKeyStoreList::entryList(int)
 	{
 		PGPKey pub, sec;
 
-		QString id = pkey.keyItems.first().id;
+		const QString id = pkey.keyItems.first().id;
 
 		MyPGPKeyContext *kc = new MyPGPKeyContext(provider());
 		// not secret, in keyring
@@ -139,10 +139,10 @@ KeyStoreEntryContext *MyKeyStoreList::entry(int, const QString &entryId)
 
 	PGPKey pub = getPubKey(entryId);
 	if(pub.isNull())
-		return 0;
+		return nullptr;
 
 	// optional
-	PGPKey sec = getSecKey(entryId, static_cast<MyPGPKeyContext *>(pub.context())->_props.userIds);
+	const PGPKey sec = getSecKey(entryId, static_cast<MyPGPKeyContext *>(pub.context())->_props.userIds);
 
 	MyKeyStoreEntry *c = new MyKeyStoreEntry(pub, sec, provider());
 	c->_storeId = storeId(0);
@@ -154,22 +154,22 @@ KeyStoreEntryContext *MyKeyStoreList::entryPassive(const QString &serialized)
 {
 	QMutexLocker locker(&ringMutex);
 
-	QStringList parts = serialized.split(':');
+	const QStringList parts = serialized.split(QLatin1Char(':'));
 	if(parts.count() < 2)
-		return 0;
-	if(unescape_string(parts[0]) != "qca-gnupg-1")
-		return 0;
+		return nullptr;
+	if(unescape_string(parts[0]) != QLatin1String("qca-gnupg-1"))
+		return nullptr;
 
 	QString entryId = unescape_string(parts[1]);
 	if(entryId.isEmpty())
-		return 0;
+		return nullptr;
 
 	PGPKey pub = getPubKey(entryId);
 	if(pub.isNull())
-		return 0;
+		return nullptr;
 
 	// optional
-	PGPKey sec = getSecKey(entryId, static_cast<MyPGPKeyContext *>(pub.context())->_props.userIds);
+	const PGPKey sec = getSecKey(entryId, static_cast<MyPGPKeyContext *>(pub.context())->_props.userIds);
 
 	MyKeyStoreEntry *c = new MyKeyStoreEntry(pub, sec, provider());
 	c->_storeId = storeId(0);
@@ -181,7 +181,7 @@ KeyStoreEntryContext *MyKeyStoreList::entryPassive(const QString &serialized)
 QString MyKeyStoreList::writeEntry(int, const PGPKey &key)
 {
 	const MyPGPKeyContext *kc = static_cast<const MyPGPKeyContext *>(key.context());
-	QByteArray buf = kc->toBinary();
+	const QByteArray buf = kc->toBinary();
 
 	GpgOp gpg(find_bin());
 	gpg.doImport(buf);
@@ -375,7 +375,7 @@ void MyKeyStoreList::gpg_finished()
 
 			if(secring.isEmpty())
 			{
-				secring = homeDir + "/secring.gpg";
+				secring = homeDir + QStringLiteral("/secring.gpg");
 			}
 			ringWatch.add(secring);
 
@@ -389,7 +389,7 @@ void MyKeyStoreList::gpg_finished()
 			pubring = QFileInfo(gpg.keyringFile()).canonicalFilePath();
 			if(pubring.isEmpty())
 			{
-				pubring = homeDir + "/pubring.gpg";
+				pubring = homeDir + QStringLiteral("/pubring.gpg");
 			}
 			ringWatch.add(pubring);
 
@@ -423,7 +423,7 @@ void MyKeyStoreList::gpg_finished()
 		if(!gpg.success())
 			return;
 
-		GpgOp::Type op = gpg.op();
+		const GpgOp::Type op = gpg.op();
 		if(op == GpgOp::SecretKeys)
 		{
 			ringMutex.lock();
@@ -453,7 +453,7 @@ void MyKeyStoreList::gpg_finished()
 
 void MyKeyStoreList::ring_changed(const QString &filePath)
 {
-	ext_keyStoreLog(QString("ring_changed: [%1]\n").arg(filePath));
+	ext_keyStoreLog(QStringLiteral("ring_changed: [%1]\n").arg(filePath));
 
 	if(filePath == secring)
 		sec_changed();

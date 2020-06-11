@@ -27,6 +27,7 @@ class MyKeyStoreList;
 
 class MyKeyStoreEntry : public QCA::KeyStoreEntryContext
 {
+    Q_OBJECT
 public:
 	QCA::KeyStoreEntry::Type item_type;
 	QCA::PGPKey pub, sec;
@@ -34,20 +35,20 @@ public:
 
 	MyKeyStoreEntry(const QCA::PGPKey &_pub, const QCA::PGPKey &_sec, QCA::Provider *p);
 	MyKeyStoreEntry(const MyKeyStoreEntry &from);
-	~MyKeyStoreEntry();
+	~MyKeyStoreEntry() override;
 
 	// reimplemented Provider::Context
-	QCA::Provider::Context *clone() const;
+	QCA::Provider::Context *clone() const override;
 
 	// reimplemented KeyStoreEntryContext
-	QCA::KeyStoreEntry::Type type() const;
-	QString name() const;
-	QString id() const;
-	QString storeId() const;
-	QString storeName() const;
-	QCA::PGPKey pgpSecretKey() const;
-	QCA::PGPKey pgpPublicKey() const;
-	QString serialize() const;
+	QCA::KeyStoreEntry::Type type() const override;
+	QString name() const override;
+	QString id() const override;
+	QString storeId() const override;
+	QString storeName() const override;
+	QCA::PGPKey pgpSecretKey() const override;
+	QCA::PGPKey pgpPublicKey() const override;
+	QString serialize() const override;
 };
 
 } // end namespace gpgQCAPlugin

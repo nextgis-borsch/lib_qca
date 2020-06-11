@@ -35,7 +35,7 @@ class CMSut : public QObject
 
   Q_OBJECT
 
-private slots:
+private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
     void xcrypt_data();
@@ -75,15 +75,15 @@ void CMSut::xcrypt_data()
 void CMSut::xcrypt()
 {
     QStringList providersToTest;
-    providersToTest.append("qca-ossl");
+    providersToTest.append(QStringLiteral("qca-ossl"));
 
     foreach(const QString provider, providersToTest) {
         if( !QCA::isSupported( "cert", provider ) )
-            QWARN( QString( "Certificate not supported for "+provider).toLocal8Bit() );
+            QWARN( (QStringLiteral( "Certificate not supported for ")+provider).toLocal8Bit().constData() );
         else if( !QCA::isSupported( "cms", provider ) )
-	    QWARN( QString( "CMS not supported for "+provider).toLocal8Bit() );
+	    QWARN( (QStringLiteral( "CMS not supported for ")+provider).toLocal8Bit().constData() );
 	else {
-	    QCA::Certificate pubCert = QCA::Certificate::fromPEMFile( "QcaTestClientCert.pem",0, provider );
+	    QCA::Certificate pubCert = QCA::Certificate::fromPEMFile( QStringLiteral("QcaTestClientCert.pem"),nullptr, provider );
 	    QCOMPARE( pubCert.isNull(), false );
 
 	    QCA::SecureMessageKey secMsgKey;
@@ -124,7 +124,7 @@ void CMSut::xcrypt()
 
 	    QCA::ConvertResult res;
 	    QCA::SecureArray passPhrase = "start";
-	    QCA::PrivateKey privKey = QCA::PrivateKey::fromPEMFile( "QcaTestClientKey.pem", passPhrase, &res );
+	    QCA::PrivateKey privKey = QCA::PrivateKey::fromPEMFile( QStringLiteral("QcaTestClientKey.pem"), passPhrase, &res );
 	    QCOMPARE( res, QCA::ConvertGood );
 
 	    secMsgKey.setX509PrivateKey( privKey );
@@ -174,20 +174,20 @@ void CMSut::signverify_data()
 void CMSut::signverify()
 {
     QStringList providersToTest;
-    providersToTest.append("qca-ossl");
+    providersToTest.append(QStringLiteral("qca-ossl"));
 
     foreach(const QString provider, providersToTest) {
         if( !QCA::isSupported( "cert", provider ) )
-            QWARN( QString( "Certificate not supported for "+provider).toLocal8Bit() );
+            QWARN( (QStringLiteral( "Certificate not supported for ")+provider).toLocal8Bit().constData() );
         else if( !QCA::isSupported( "cms", provider ) )
-	    QWARN( QString( "CMS not supported for "+provider).toLocal8Bit() );
+	    QWARN( (QStringLiteral( "CMS not supported for ")+provider).toLocal8Bit().constData() );
 	else {
 	    QCA::ConvertResult res;
 	    QCA::SecureArray passPhrase = "start";
-	    QCA::PrivateKey privKey = QCA::PrivateKey::fromPEMFile( "QcaTestClientKey.pem", passPhrase, &res, provider );
+	    QCA::PrivateKey privKey = QCA::PrivateKey::fromPEMFile( QStringLiteral("QcaTestClientKey.pem"), passPhrase, &res, provider );
 	    QCOMPARE( res, QCA::ConvertGood );
 
-	    QCA::Certificate pubCert = QCA::Certificate::fromPEMFile( "QcaTestClientCert.pem", &res, provider);
+	    QCA::Certificate pubCert = QCA::Certificate::fromPEMFile( QStringLiteral("QcaTestClientCert.pem"), &res, provider);
 	    QCOMPARE( res, QCA::ConvertGood );
 	    QCOMPARE( pubCert.isNull(), false );
 
@@ -231,7 +231,7 @@ void CMSut::signverify()
 	    QCOMPARE( signedResult2.isEmpty(), false );
 
 	    QCA::CMS cms;
-	    QCA::Certificate caCert = QCA::Certificate::fromPEMFile( "QcaTestRootCert.pem", &res, provider );
+	    QCA::Certificate caCert = QCA::Certificate::fromPEMFile( QStringLiteral("QcaTestRootCert.pem"), &res, provider );
 	    QCOMPARE( res, QCA::ConvertGood );
 	    QCA::CertificateCollection caCertCollection;
 	    caCertCollection.addCertificate(caCert);
@@ -306,20 +306,20 @@ void CMSut::signverify_message_data()
 void CMSut::signverify_message()
 {
     QStringList providersToTest;
-    providersToTest.append("qca-ossl");
+    providersToTest.append(QStringLiteral("qca-ossl"));
 
     foreach(const QString provider, providersToTest) {
         if( !QCA::isSupported( "cert", provider ) )
-            QWARN( QString( "Certificate not supported for "+provider).toLocal8Bit() );
+            QWARN( (QStringLiteral( "Certificate not supported for ")+provider).toLocal8Bit().constData() );
         else if( !QCA::isSupported( "cms", provider ) )
-	    QWARN( QString( "CMS not supported for "+provider).toLocal8Bit() );
+	    QWARN( (QStringLiteral( "CMS not supported for ")+provider).toLocal8Bit().constData() );
 	else {
 	    QCA::ConvertResult res;
 	    QCA::SecureArray passPhrase = "start";
-	    QCA::PrivateKey privKey = QCA::PrivateKey::fromPEMFile( "QcaTestClientKey.pem", passPhrase, &res, provider );
+	    QCA::PrivateKey privKey = QCA::PrivateKey::fromPEMFile( QStringLiteral("QcaTestClientKey.pem"), passPhrase, &res, provider );
 	    QCOMPARE( res, QCA::ConvertGood );
 
-	    QCA::Certificate pubCert = QCA::Certificate::fromPEMFile( "QcaTestClientCert.pem", &res, provider );
+	    QCA::Certificate pubCert = QCA::Certificate::fromPEMFile( QStringLiteral("QcaTestClientCert.pem"), &res, provider );
 	    QCOMPARE( res, QCA::ConvertGood );
 	    QCOMPARE( pubCert.isNull(), false );
 
@@ -363,7 +363,7 @@ void CMSut::signverify_message()
 	    QCOMPARE( signedResult2.isEmpty(), false );
 
 	    QCA::CMS cms;
-	    QCA::Certificate caCert = QCA::Certificate::fromPEMFile( "QcaTestRootCert.pem", &res, provider );
+	    QCA::Certificate caCert = QCA::Certificate::fromPEMFile( QStringLiteral("QcaTestRootCert.pem"), &res, provider );
 	    QCOMPARE( res, QCA::ConvertGood );
 
 	    QCA::CertificateCollection caCertCollection;
@@ -424,20 +424,20 @@ void CMSut::signverify_message_invalid_data()
 void CMSut::signverify_message_invalid()
 {
     QStringList providersToTest;
-    providersToTest.append("qca-ossl");
+    providersToTest.append(QStringLiteral("qca-ossl"));
 
     foreach(const QString provider, providersToTest) {
         if( !QCA::isSupported( "cert", provider ) )
-            QWARN( QString( "Certificate not supported for "+provider).toLocal8Bit() );
+            QWARN( (QStringLiteral( "Certificate not supported for ")+provider).toLocal8Bit().constData() );
         else if( !QCA::isSupported( "cms", provider ) )
-	    QWARN( QString( "CMS not supported for "+provider).toLocal8Bit() );
+	    QWARN( (QStringLiteral( "CMS not supported for ")+provider).toLocal8Bit().constData() );
 	else {
 	    QCA::ConvertResult res;
 	    QCA::SecureArray passPhrase = "start";
-	    QCA::PrivateKey privKey = QCA::PrivateKey::fromPEMFile( "QcaTestClientKey.pem", passPhrase, &res, provider );
+	    QCA::PrivateKey privKey = QCA::PrivateKey::fromPEMFile( QStringLiteral("QcaTestClientKey.pem"), passPhrase, &res, provider );
 	    QCOMPARE( res, QCA::ConvertGood );
 
-	    QCA::Certificate pubCert = QCA::Certificate::fromPEMFile( "QcaTestClientCert.pem", &res, provider );
+	    QCA::Certificate pubCert = QCA::Certificate::fromPEMFile( QStringLiteral("QcaTestClientCert.pem"), &res, provider );
 	    QCOMPARE( res, QCA::ConvertGood );
 	    QCOMPARE( pubCert.isNull(), false );
 
@@ -469,7 +469,7 @@ void CMSut::signverify_message_invalid()
 	    QCOMPARE( signedResult1.isEmpty(), false );
 
 	    QCA::CMS cms;
-	    QCA::Certificate caCert = QCA::Certificate::fromPEMFile( "QcaTestRootCert.pem", &res, provider );
+	    QCA::Certificate caCert = QCA::Certificate::fromPEMFile( QStringLiteral("QcaTestRootCert.pem"), &res, provider );
 	    QCOMPARE( res, QCA::ConvertGood );
 
 	    QCA::CertificateCollection caCertCollection;

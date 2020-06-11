@@ -27,7 +27,7 @@ namespace gpgQCAPlugin
 {
 
 MyMessageContext::MyMessageContext(MyOpenPGPContext *_sms, Provider *p)
-	: MessageContext(p, "pgpmsg")
+	: MessageContext(p, QStringLiteral("pgpmsg"))
 	, sms(_sms)
 	, op(Sign)
 	, signMode(SecureMessage::Detached)
@@ -37,20 +37,20 @@ MyMessageContext::MyMessageContext(MyOpenPGPContext *_sms, Provider *p)
 	, wasSigned(false)
 	, op_err(GpgOp::ErrorUnknown), gpg(find_bin()) ,_finished(false)
 {
-	connect(&gpg, SIGNAL(readyRead()), SLOT(gpg_readyRead()));
-	connect(&gpg, SIGNAL(bytesWritten(int)), SLOT(gpg_bytesWritten(int)));
-	connect(&gpg, SIGNAL(finished()), SLOT(gpg_finished()));
-	connect(&gpg, SIGNAL(needPassphrase(const QString &)), SLOT(gpg_needPassphrase(const QString &)));
-	connect(&gpg, SIGNAL(needCard()), SLOT(gpg_needCard()));
-	connect(&gpg, SIGNAL(readyReadDiagnosticText()), SLOT(gpg_readyReadDiagnosticText()));
+	connect(&gpg, &GpgOp::readyRead, this, &MyMessageContext::gpg_readyRead);
+	connect(&gpg, &GpgOp::bytesWritten, this, &MyMessageContext::gpg_bytesWritten);
+	connect(&gpg, &GpgOp::finished, this, &MyMessageContext::gpg_finished);
+	connect(&gpg, &GpgOp::needPassphrase, this, &MyMessageContext::gpg_needPassphrase);
+	connect(&gpg, &GpgOp::needCard, this, &MyMessageContext::gpg_needCard);
+	connect(&gpg, &GpgOp::readyReadDiagnosticText, this, &MyMessageContext::gpg_readyReadDiagnosticText);
 
-	connect(&asker, SIGNAL(responseReady()), SLOT(asker_responseReady()));
-	connect(&tokenAsker, SIGNAL(responseReady()), SLOT(tokenAsker_responseReady()));
+	connect(&asker, &QCA::PasswordAsker::responseReady, this, &MyMessageContext::asker_responseReady);
+	connect(&tokenAsker, &QCA::TokenAsker::responseReady, this, &MyMessageContext::tokenAsker_responseReady);
 }
 
 Provider::Context *MyMessageContext::clone() const
 {
-	return 0;
+	return nullptr;
 }
 
 bool MyMessageContext::canSignMultiple() const
@@ -94,7 +94,7 @@ void MyMessageContext::start(SecureMessage::Format f, Operation op)
 	format = f;
 	this->op = op;
 
-	if(getProperty("pgp-always-trust").toBool())
+	if(getProperty(QStringLiteral("pgp-always-trust")).toBool())
 		gpg.setAlwaysTrust(true);
 
 	if(format == SecureMessage::Ascii)
@@ -146,7 +146,7 @@ void MyMessageContext::update(const QByteArray &in)
 
 QByteArray MyMessageContext::read()
 {
-	QByteArray a = out;
+	const QByteArray a = out;
 	out.clear();
 	return a;
 }
@@ -190,9 +190,9 @@ void MyMessageContext::complete()
 	{
 		if(gpg.wasSigned())
 		{
-			QString signerId = gpg.signerId();
-			QDateTime ts = gpg.timestamp();
-			GpgOp::VerifyResult vr = gpg.verifyResult();
+			const QString signerId = gpg.signerId();
+			const QDateTime ts = gpg.timestamp();
+			const GpgOp::VerifyResult vr = gpg.verifyResult();
 
 			SecureMessageSignature::IdentityResult ir;
 			Validity v;
@@ -241,7 +241,7 @@ bool MyMessageContext::waitForFinished(int msecs)
 	Q_UNUSED(msecs);
 	MyKeyStoreList *keyStoreList = MyKeyStoreList::instance();
 
-	while(1)
+	while(true)
 	{
 		// TODO: handle token prompt events
 
@@ -257,16 +257,16 @@ bool MyMessageContext::waitForFinished(int msecs)
 			else
 				keyId = e.keyId;
 			QStringList out;
-			out += escape_string("qca-gnupg-1");
+			out += escape_string(QStringLiteral("qca-gnupg-1"));
 			out += escape_string(keyId);
-			QString serialized = out.join(":");
+			QString serialized = out.join(QStringLiteral(":"));
 
 			KeyStoreEntry kse;
 			KeyStoreEntryContext *c = keyStoreList->entryPassive(serialized);
 			if(c)
 				kse.change(c);
 
-			asker.ask(Event::StylePassphrase, KeyStoreInfo(KeyStore::PGPKeyring, keyStoreList->storeId(0), keyStoreList->name(0)), kse, 0);
+			asker.ask(Event::StylePassphrase, KeyStoreInfo(KeyStore::PGPKeyring, keyStoreList->storeId(0), keyStoreList->name(0)), kse, nullptr);
 			asker.waitForResponse();
 
 			if(!asker.accepted())
@@ -279,7 +279,7 @@ bool MyMessageContext::waitForFinished(int msecs)
 		}
 		else if(e.type == GpgOp::Event::NeedCard)
 		{
-			tokenAsker.ask(KeyStoreInfo(KeyStore::PGPKeyring, keyStoreList->storeId(0), keyStoreList->name(0)), KeyStoreEntry(), 0);
+			tokenAsker.ask(KeyStoreInfo(KeyStore::PGPKeyring, keyStoreList->storeId(0), keyStoreList->name(0)), KeyStoreEntry(), nullptr);
 
 			if(!tokenAsker.accepted())
 			{
@@ -340,7 +340,7 @@ QByteArray MyMessageContext::signature() const
 QString MyMessageContext::hashName() const
 {
 	// TODO
-	return "sha1";
+	return QStringLiteral("sha1");
 }
 
 SecureMessageSignatureList MyMessageContext::signers() const
@@ -384,9 +384,9 @@ void MyMessageContext::gpg_needPassphrase(const QString &in_keyId)
 		keyId = in_keyId;
 	//emit keyStoreList->storeNeedPassphrase(0, 0, keyId);
 	QStringList out;
-	out += escape_string("qca-gnupg-1");
+	out += escape_string(QStringLiteral("qca-gnupg-1"));
 	out += escape_string(keyId);
-	QString serialized = out.join(":");
+	QString serialized = out.join(QStringLiteral(":"));
 
 	KeyStoreEntry kse;
 	MyKeyStoreList *keyStoreList = MyKeyStoreList::instance();
@@ -394,13 +394,13 @@ void MyMessageContext::gpg_needPassphrase(const QString &in_keyId)
 	if(c)
 		kse.change(c);
 
-	asker.ask(Event::StylePassphrase, KeyStoreInfo(KeyStore::PGPKeyring, keyStoreList->storeId(0), keyStoreList->name(0)), kse, 0);
+	asker.ask(Event::StylePassphrase, KeyStoreInfo(KeyStore::PGPKeyring, keyStoreList->storeId(0), keyStoreList->name(0)), kse, nullptr);
 }
 
 void MyMessageContext::gpg_needCard()
 {
 	MyKeyStoreList *keyStoreList = MyKeyStoreList::instance();
-	tokenAsker.ask(KeyStoreInfo(KeyStore::PGPKeyring, keyStoreList->storeId(0), keyStoreList->name(0)), KeyStoreEntry(), 0);
+	tokenAsker.ask(KeyStoreInfo(KeyStore::PGPKeyring, keyStoreList->storeId(0), keyStoreList->name(0)), KeyStoreEntry(), nullptr);
 }
 
 void MyMessageContext::gpg_readyReadDiagnosticText()
@@ -417,7 +417,7 @@ void MyMessageContext::asker_responseReady()
 		return;
 	}
 
-	SecureArray a = asker.password();
+	const SecureArray a = asker.password();
 	gpg.submitPassphrase(a);
 }
 

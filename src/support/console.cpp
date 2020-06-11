@@ -39,8 +39,8 @@
 # include <fcntl.h>
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #define CONSOLEPROMPT_INPUT_MAX 56
 
@@ -60,12 +60,12 @@ private:
 	QByteArray in_left, out_left;
 
 public:
-	ConsoleWorker(QObject *parent = 0) : QObject(parent), in(this), out(this)
+	ConsoleWorker(QObject *parent = nullptr) : QObject(parent), in(this), out(this)
 	{
 		started = false;
 	}
 
-	~ConsoleWorker()
+	~ConsoleWorker() override
 	{
 		stop();
 	}
@@ -77,17 +77,17 @@ public:
 		if(in_id != INVALID_Q_PIPE_ID)
 		{
 			in.take(in_id, QPipeDevice::Read);
-			connect(&in, SIGNAL(readyRead()), SLOT(in_readyRead()));
-			connect(&in, SIGNAL(closed()), SLOT(in_closed()));
-			connect(&in, SIGNAL(error(QCA::QPipeEnd::Error)), SLOT(in_error(QCA::QPipeEnd::Error)));
+			connect(&in, &QPipeEnd::readyRead, this, &ConsoleWorker::in_readyRead);
+			connect(&in, &QPipeEnd::closed, this, &ConsoleWorker::in_closed);
+			connect(&in, &QPipeEnd::error, this, &ConsoleWorker::in_error);
 			in.enable();
 		}
 
 		if(out_id != INVALID_Q_PIPE_ID)
 		{
 			out.take(out_id, QPipeDevice::Write);
-			connect(&out, SIGNAL(bytesWritten(int)), SLOT(out_bytesWritten(int)));
-			connect(&out, SIGNAL(closed()), SLOT(out_closed()));
+			connect(&out, &QPipeEnd::bytesWritten, this, &ConsoleWorker::out_bytesWritten);
+			connect(&out, &QPipeEnd::closed, this, &ConsoleWorker::out_closed);
 			out.enable();
 		}
 
@@ -110,11 +110,22 @@ public:
 		started = false;
 	}
 
-public slots:
-	bool isValid() const
+	Q_INVOKABLE bool isValid() const
 	{
 		return in.isValid();
 	}
+
+	Q_INVOKABLE int bytesAvailable() const
+	{
+		return in.bytesAvailable();
+	}
+
+	Q_INVOKABLE int bytesToWrite() const
+	{
+		return in.bytesToWrite();
+	}
+
+public Q_SLOTS:
 
 	void setSecurityEnabled(bool enabled)
 	{
@@ -149,16 +160,6 @@ public slots:
 		out.close();
 	}
 
-	int bytesAvailable() const
-	{
-		return in.bytesAvailable();
-	}
-
-	int bytesToWrite() const
-	{
-		return in.bytesToWrite();
-	}
-
 public:
 	QByteArray takeBytesToRead()
 	{
@@ -174,13 +175,13 @@ public:
 		return a;
 	}
 
-signals:
+Q_SIGNALS:
 	void readyRead();
 	void bytesWritten(int bytes);
 	void inputClosed();
 	void outputClosed();
 
-private slots:
+private Q_SLOTS:
 	void in_readyRead()
 	{
 		emit readyRead();
@@ -219,12 +220,12 @@ public:
 	QByteArray in_left, out_left;
 	QMutex call_mutex;
 
-	ConsoleThread(QObject *parent = 0) : SyncThread(parent)
+	ConsoleThread(QObject *parent = nullptr) : SyncThread(parent)
 	{
 		qRegisterMetaType<SecureArray>("QCA::SecureArray");
 	}
 
-	~ConsoleThread()
+	~ConsoleThread() override
 	{
 		stop();
 	}
@@ -282,16 +283,12 @@ public:
 
 	SecureArray readSecure(int bytes = -1)
 	{
-#if QT_VERSION >= 0x050000
 		return mycall(worker, "readSecure", QVariantList() << bytes).value<SecureArray>();
-#else
-		return qVariantValue<SecureArray>(mycall(worker, "readSecure", QVariantList() << bytes));
-#endif
 	}
 
 	void writeSecure(const SecureArray &a)
 	{
-		mycall(worker, "writeSecure", QVariantList() << qVariantFromValue<SecureArray>(a));
+		mycall(worker, "writeSecure", QVariantList() << QVariant::fromValue<SecureArray>(a));
 	}
 
 	void closeOutput()
@@ -323,29 +320,29 @@ public:
 		return a;
 	}
 
-signals:
+Q_SIGNALS:
 	void readyRead();
 	void bytesWritten(int);
 	void inputClosed();
 	void outputClosed();
 
 protected:
-	virtual void atStart()
+	void atStart() override
 	{
 		worker = new ConsoleWorker;
 
 		// use direct connections here, so that the emits come from
 		//   the other thread.  we can also connect to our own
 		//   signals to avoid having to make slots just to emit.
-		connect(worker, SIGNAL(readyRead()), SIGNAL(readyRead()), Qt::DirectConnection);
-		connect(worker, SIGNAL(bytesWritten(int)), SIGNAL(bytesWritten(int)), Qt::DirectConnection);
-		connect(worker, SIGNAL(inputClosed()), SIGNAL(inputClosed()), Qt::DirectConnection);
-		connect(worker, SIGNAL(outputClosed()), SIGNAL(outputClosed()), Qt::DirectConnection);
+		connect(worker, &ConsoleWorker::readyRead, this, &ConsoleThread::readyRead, Qt::DirectConnection);
+		connect(worker, &ConsoleWorker::bytesWritten, this, &ConsoleThread::bytesWritten, Qt::DirectConnection);
+		connect(worker, &ConsoleWorker::inputClosed, this, &ConsoleThread::inputClosed, Qt::DirectConnection);
+		connect(worker, &ConsoleWorker::outputClosed, this, &ConsoleThread::outputClosed, Qt::DirectConnection);
 
 		worker->start(_in_id, _out_id);
 	}
 
-	virtual void atEnd()
+	void atEnd() override
 	{
 		in_left = worker->takeBytesToRead();
 		out_left = worker->takeBytesToWrite();
@@ -381,10 +378,10 @@ public:
 		started = false;
 		mode = Console::Default;
 		thread = new ConsoleThread(this);
-		ref = 0;
+		ref = nullptr;
 	}
 
-	~ConsolePrivate()
+	~ConsolePrivate() override
 	{
 		delete thread;
 		setInteractive(Console::Default);
@@ -430,19 +427,19 @@ public:
 	}
 };
 
-static Console *g_tty_console = 0, *g_stdio_console = 0;
+static Console *g_tty_console = nullptr, *g_stdio_console = nullptr;
 
 Console::Console(Type type, ChannelMode cmode, TerminalMode tmode, QObject *parent)
 :QObject(parent)
 {
 	if(type == Tty)
 	{
-		Q_ASSERT(g_tty_console == 0);
+		Q_ASSERT(g_tty_console == nullptr);
 		g_tty_console = this;
 	}
 	else
 	{
-		Q_ASSERT(g_stdio_console == 0);
+		Q_ASSERT(g_stdio_console == nullptr);
 		g_stdio_console = this;
 	}
 
@@ -511,9 +508,9 @@ Console::~Console()
 	Console::Type type = d->type;
 	delete d;
 	if(type == Tty)
-		g_tty_console = 0;
+		g_tty_console = nullptr;
 	else
-		g_stdio_console = 0;
+		g_stdio_console = nullptr;
 }
 
 Console::Type Console::type() const
@@ -599,13 +596,13 @@ public:
 
 	ConsoleReferencePrivate(ConsoleReference *_q) : QObject(_q), q(_q), lateTrigger(this)
 	{
-		console = 0;
-		thread = 0;
-		connect(&lateTrigger, SIGNAL(timeout()), SLOT(doLate()));
+		console = nullptr;
+		thread = nullptr;
+		connect(&lateTrigger, &SafeTimer::timeout, this, &ConsoleReferencePrivate::doLate);
 		lateTrigger.setSingleShot(true);
 	}
 
-private slots:
+private Q_SLOTS:
 	void doLate()
 	{
 		QPointer<QObject> self = this;
@@ -636,22 +633,22 @@ bool ConsoleReference::start(Console *console, SecurityMode mode)
 	Q_ASSERT(!d->console);
 
 	// one console reference at a time
-	Q_ASSERT(console->d->ref == 0);
+	Q_ASSERT(console->d->ref == nullptr);
 
 	// let's take it
 	d->console = console;
 	d->thread = d->console->d->thread;
 	d->console->d->ref = this;
 
-	bool valid = d->thread->isValid();
-	int avail = d->thread->bytesAvailable();
+	const bool valid = d->thread->isValid();
+	const int avail = d->thread->bytesAvailable();
 
 	// pipe already closed and no data?  consider this an error
 	if(!valid && avail == 0)
 	{
-		d->console->d->ref = 0;
-		d->thread = 0;
-		d->console = 0;
+		d->console->d->ref = nullptr;
+		d->thread = nullptr;
+		d->console = nullptr;
 		return false;
 	}
 
@@ -660,10 +657,10 @@ bool ConsoleReference::start(Console *console, SecurityMode mode)
 	if(mode == SecurityEnabled)
 		d->thread->setSecurityEnabled(true);
 
-	connect(d->thread, SIGNAL(readyRead()), SIGNAL(readyRead()));
-	connect(d->thread, SIGNAL(bytesWritten(int)), SIGNAL(bytesWritten(int)));
-	connect(d->thread, SIGNAL(inputClosed()), SIGNAL(inputClosed()));
-	connect(d->thread, SIGNAL(outputClosed()), SIGNAL(outputClosed()));
+	connect(d->thread, &ConsoleThread::readyRead, this, &ConsoleReference::readyRead);
+	connect(d->thread, &ConsoleThread::bytesWritten, this, &ConsoleReference::bytesWritten);
+	connect(d->thread, &ConsoleThread::inputClosed, this, &ConsoleReference::inputClosed);
+	connect(d->thread, &ConsoleThread::outputClosed, this, &ConsoleReference::outputClosed);
 
 	d->late_read = false;
 	d->late_close = false;
@@ -687,14 +684,14 @@ void ConsoleReference::stop()
 
 	d->lateTrigger.stop();
 
-	disconnect(d->thread, 0, this, 0);
+	disconnect(d->thread, nullptr, this, nullptr);
 
 	// automatically disable security when we go inactive
 	d->thread->setSecurityEnabled(false);
 
-	d->console->d->ref = 0;
-	d->thread = 0;
-	d->console = 0;
+	d->console->d->ref = nullptr;
+	d->thread = nullptr;
+	d->console = nullptr;
 }
 
 Console *ConsoleReference::console() const
@@ -766,10 +763,10 @@ public:
 
 	Private(ConsolePrompt *_q) : QObject(_q), q(_q), sync(_q), console(this)
 	{
-		connect(&console, SIGNAL(readyRead()), SLOT(con_readyRead()));
-		connect(&console, SIGNAL(inputClosed()), SLOT(con_inputClosed()));
+		connect(&console, &ConsoleReference::readyRead, this, &Private::con_readyRead);
+		connect(&console, &ConsoleReference::inputClosed, this, &Private::con_inputClosed);
 
-		con = 0;
+		con = nullptr;
 		own_con = false;
 		waiting = false;
 
@@ -778,11 +775,11 @@ public:
 #else
 		codec = QTextCodec::codecForLocale();
 #endif
-		encstate = 0;
-		decstate = 0;
+		encstate = nullptr;
+		decstate = nullptr;
 	}
 
-	~Private()
+	~Private() override
 	{
 		reset();
 	}
@@ -790,15 +787,15 @@ public:
 	void reset()
 	{
 		delete encstate;
-		encstate = 0;
+		encstate = nullptr;
 		delete decstate;
-		decstate = 0;
+		decstate = nullptr;
 
 		console.stop();
 		if(own_con)
 		{
 			delete con;
-			con = 0;
+			con = nullptr;
 			own_con = false;
 		}
 	}
@@ -829,7 +826,7 @@ public:
 		}
 
 		if(!charMode)
-			writeString(promptStr + ": ");
+			writeString(promptStr + QStringLiteral(": "));
 
 		return true;
 	}
@@ -850,19 +847,19 @@ public:
 			return false;
 		}
 
-		if(c == '\r' || c == '\n')
+		if(c == QLatin1Char('\r') || c == QLatin1Char('\n'))
 		{
-			writeString("\n");
+			writeString(QStringLiteral("\n"));
 			done = true;
 			return false;
 		}
 
-		if(c == '\b' || c.unicode() == 0x7f)
+		if(c == QLatin1Char('\b') || c.unicode() == 0x7f)
 		{
 			if(at > 0)
 			{
 				--at;
-				writeString("\b \b");
+				writeString(QStringLiteral("\b \b"));
 				result.resize(at * sizeof(ushort));
 			}
 			return true;
@@ -875,7 +872,7 @@ public:
 
 		appendChar(c);
 
-		writeString("*");
+		writeString(QStringLiteral("*"));
 		return true;
 	}
 
@@ -883,7 +880,7 @@ public:
 	{
 		if((at + 1) * (int)sizeof(ushort) > result.size())
 			result.resize((at + 1) * sizeof(ushort));
-		ushort *p = (ushort *)result.data();
+		ushort *p = reinterpret_cast<ushort *>(result.data());
 		p[at++] = c.unicode();
 	}
 
@@ -893,8 +890,8 @@ public:
 		QTextCodec *codec = QTextCodec::codecForMib(106);
 		QTextCodec::ConverterState cstate(QTextCodec::IgnoreHeader);
 		SecureArray out;
-		ushort *ustr = (ushort *)result.data();
-		int len = result.size() / sizeof(ushort);
+		const ushort *ustr = reinterpret_cast<ushort *>(result.data());
+		const int len = result.size() / sizeof(ushort);
 		for(int n = 0; n < len; ++n)
 		{
 			QChar c(ustr[n]);
@@ -903,7 +900,7 @@ public:
 		result = out;
 	}
 
-private slots:
+private Q_SLOTS:
 	void con_readyRead()
 	{
 		while(console.bytesAvailable() > 0)
@@ -913,11 +910,11 @@ private slots:
 				break;
 
 			// convert to unicode and process
-			QString str = codec->toUnicode(buf.data(), 1, decstate);
+			const QString str = codec->toUnicode(buf.data(), 1, decstate);
 			bool quit = false;
-			for(int n = 0; n < str.length(); ++n)
+			for(const QChar &c : str)
 			{
-				if(!processChar(str[n]))
+				if(!processChar(c))
 				{
 					quit = true;
 					break;
@@ -1013,7 +1010,7 @@ SecureArray ConsolePrompt::result() const
 
 QChar ConsolePrompt::resultChar() const
 {
-	QString str = QString::fromUtf8(d->result.toByteArray());
+	const QString str = QString::fromUtf8(d->result.toByteArray());
 
 	// this will never happen if getChar completes
 	if(str.isEmpty())

@@ -97,10 +97,10 @@ class MemoryRegion
 
       ~MemoryRegion() { deallocate(buf, allocated); }
    protected:
-      MemoryRegion() { buf = 0; alloc = 0; used = allocated = 0; }
+      MemoryRegion() { buf = nullptr; alloc = nullptr; used = allocated = 0; }
       MemoryRegion(const MemoryRegion<T>& copy)
          {
-         buf = 0;
+         buf = nullptr;
          used = allocated = 0;
          alloc = copy.alloc;
          set(copy.buf, copy.used);
@@ -225,7 +225,7 @@ class SecureVector : public MemoryRegion<T>
 * Locked Fixed Length Buffer                     *
 *************************************************/
 template<typename T, u32bit L>
-class SecureBuffer : public MemoryRegion<T>
+class SecureBuffer : public MemoryRegion<T> // clazy:exclude=rule-of-three TODO Needs checking if a real bug or not
    {
    public:
       SecureBuffer<T,L>& operator=(const SecureBuffer<T,L>& in)

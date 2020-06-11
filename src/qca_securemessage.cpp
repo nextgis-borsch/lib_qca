@@ -270,22 +270,22 @@ public:
 	Private(SecureMessage *_q) : readyReadTrigger(this), bytesWrittenTrigger(this), finishedTrigger(this)
 	{
 		q = _q;
-		c = 0;
-		system = 0;
+		c = nullptr;
+		system = nullptr;
 
 		readyReadTrigger.setSingleShot(true);
 		bytesWrittenTrigger.setSingleShot(true);
 		finishedTrigger.setSingleShot(true);
-		connect(&readyReadTrigger, SIGNAL(timeout()), SLOT(t_readyRead()));
-		connect(&bytesWrittenTrigger, SIGNAL(timeout()), SLOT(t_bytesWritten()));
-		connect(&finishedTrigger, SIGNAL(timeout()), SLOT(t_finished()));
+		connect(&readyReadTrigger, &SafeTimer::timeout, this, &Private::t_readyRead);
+		connect(&bytesWrittenTrigger, &SafeTimer::timeout, this, &Private::t_bytesWritten);
+		connect(&finishedTrigger, &SafeTimer::timeout, this, &Private::t_finished);
 
 		reset(ResetAll);
 	}
 
 	void init()
 	{
-		connect(c, SIGNAL(updated()), SLOT(updated()));
+		connect(c, &MessageContext::updated, this, &Private::updated);
 	}
 
 	void reset(ResetMode mode)
@@ -317,7 +317,7 @@ public:
 		}
 	}
 
-public slots:
+public Q_SLOTS:
 	void updated()
 	{
 		bool sig_read = false;
@@ -325,14 +325,14 @@ public slots:
 		bool sig_done = false;
 		int written = 0;
 		{
-			QByteArray a = c->read();
+			const QByteArray a = c->read();
 			if(!a.isEmpty())
 			{
 				sig_read = true;
 				in.append(a);
 			}
 
-			int x = c->written();
+			const int x = c->written();
 			if(x > 0)
 			{
 				sig_written = true;
@@ -525,7 +525,7 @@ void SecureMessage::update(const QByteArray &in)
 
 QByteArray SecureMessage::read()
 {
-	QByteArray a = d->in;
+	const QByteArray a = d->in;
 	d->in.clear();
 	return a;
 }
@@ -621,7 +621,7 @@ SecureMessageSystem::~SecureMessageSystem()
 // OpenPGP
 //----------------------------------------------------------------------------
 OpenPGP::OpenPGP(QObject *parent, const QString &provider)
-:SecureMessageSystem(parent, "openpgp", provider)
+:SecureMessageSystem(parent, QStringLiteral("openpgp"), provider)
 {
 }
 
@@ -640,7 +640,7 @@ public:
 };
 
 CMS::CMS(QObject *parent, const QString &provider)
-:SecureMessageSystem(parent, "cms", provider)
+:SecureMessageSystem(parent, QStringLiteral("cms"), provider)
 {
 	d = new Private;
 }

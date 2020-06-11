@@ -54,7 +54,7 @@ void RingWatch::add(const QString &filePath)
 		path = fi.absolutePath();
 
 	// watching this path already?
-	DirWatch *dirWatch = 0;
+	DirWatch *dirWatch = nullptr;
 	foreach(const DirItem &di, dirs)
 	{
 		if(di.dirWatch->dirName() == path)
@@ -71,11 +71,11 @@ void RingWatch::add(const QString &filePath)
 
 		DirItem di;
 		di.dirWatch = new DirWatch(path, this);
-		connect(di.dirWatch, SIGNAL(changed()), SLOT(dirChanged()));
+		connect(di.dirWatch, &DirWatch::changed, this, &RingWatch::dirChanged);
 
 		di.changeTimer = new SafeTimer(this);
 		di.changeTimer->setSingleShot(true);
-		connect(di.changeTimer, SIGNAL(timeout()), SLOT(handleChanged()));
+		connect(di.changeTimer, &SafeTimer::timeout, this, &RingWatch::handleChanged);
 
 		dirWatch = di.dirWatch;
 		dirs += di;
@@ -149,14 +149,14 @@ void RingWatch::handleChanged()
 		return;
 
 	DirWatch *dirWatch = dirs[at].dirWatch;
-	QString dir = dirWatch->dirName();
+	const QString dir = dirWatch->dirName();
 
 	// see which files changed
 	QStringList changeList;
 	for(int n = 0; n < files.count(); ++n)
 	{
 		FileItem &i = files[n];
-		QString filePath = dir + '/' + i.fileName;
+		QString filePath = dir + QLatin1Char('/') + i.fileName;
 		QFileInfo fi(filePath);
 
 		// if the file didn't exist, and still doesn't, skip

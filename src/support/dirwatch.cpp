@@ -37,14 +37,14 @@ class QFileSystemWatcherRelay : public QObject
 public:
 	QFileSystemWatcher *watcher;
 
-	QFileSystemWatcherRelay(QFileSystemWatcher *_watcher, QObject *parent = 0)
+	QFileSystemWatcherRelay(QFileSystemWatcher *_watcher, QObject *parent = nullptr)
 	:QObject(parent), watcher(_watcher)
 	{
-		connect(watcher, SIGNAL(directoryChanged(const QString &)), SIGNAL(directoryChanged(const QString &)), Qt::QueuedConnection);
-		connect(watcher, SIGNAL(fileChanged(const QString &)), SIGNAL(fileChanged(const QString &)), Qt::QueuedConnection);
+		connect(watcher, &QFileSystemWatcher::directoryChanged, this, &QFileSystemWatcherRelay::directoryChanged, Qt::QueuedConnection);
+		connect(watcher, &QFileSystemWatcher::fileChanged, this, &QFileSystemWatcherRelay::fileChanged, Qt::QueuedConnection);
 	}
 
-signals:
+Q_SIGNALS:
 	void directoryChanged(const QString &path);
 	void fileChanged(const QString &path);
 };
@@ -61,11 +61,11 @@ public:
 	QFileSystemWatcherRelay *watcher_relay;
 	QString dirName;
 
-	Private(DirWatch *_q) : QObject(_q), q(_q), watcher(0), watcher_relay(0)
+	Private(DirWatch *_q) : QObject(_q), q(_q), watcher(nullptr), watcher_relay(nullptr)
 	{
 	}
 
-private slots:
+public Q_SLOTS:
 	void watcher_changed(const QString &path)
 	{
 		Q_UNUSED(path);
@@ -96,8 +96,8 @@ void DirWatch::setDirName(const QString &dir)
 	{
 		delete d->watcher;
 		delete d->watcher_relay;
-		d->watcher = 0;
-		d->watcher_relay = 0;
+		d->watcher = nullptr;
+		d->watcher_relay = nullptr;
 	}
 
 	d->dirName = dir;
@@ -106,7 +106,7 @@ void DirWatch::setDirName(const QString &dir)
 	{
 		d->watcher = new QFileSystemWatcher(this);
 		d->watcher_relay = new QFileSystemWatcherRelay(d->watcher, this);
-		connect(d->watcher_relay, SIGNAL(directoryChanged(const QString &)), d, SLOT(watcher_changed(const QString &)));
+		connect(d->watcher_relay, &QFileSystemWatcherRelay::directoryChanged, d, &Private::watcher_changed);
 
 		d->watcher->addPath(d->dirName);
 	}
@@ -127,7 +127,7 @@ public:
 	QString filePath; // absolute path of file, calculated by us
 	bool fileExisted;
 
-	Private(FileWatch *_q) : QObject(_q), q(_q), watcher(0), watcher_relay(0)
+	Private(FileWatch *_q) : QObject(_q), q(_q), watcher(nullptr), watcher_relay(nullptr)
 	{
 	}
 
@@ -137,13 +137,13 @@ public:
 
 		watcher = new QFileSystemWatcher(this);
 		watcher_relay = new QFileSystemWatcherRelay(watcher, this);
-		connect(watcher_relay, SIGNAL(directoryChanged(const QString &)), SLOT(dir_changed(const QString &)));
-		connect(watcher_relay, SIGNAL(fileChanged(const QString &)), SLOT(file_changed(const QString &)));
+		connect(watcher_relay, &QFileSystemWatcherRelay::directoryChanged, this, &Private::dir_changed);
+		connect(watcher_relay, &QFileSystemWatcherRelay::fileChanged, this, &Private::file_changed);
 
 		QFileInfo fi(fileName);
 		fi.makeAbsolute();
 		filePath = fi.filePath();
-		QDir dir = fi.dir();
+		const QDir dir = fi.dir();
 
 		// we watch both the directory and the file itself.  the
 		//   reason we watch the directory is so we can detect when
@@ -182,20 +182,20 @@ public:
 		{
 			delete watcher;
 			delete watcher_relay;
-			watcher = 0;
-			watcher_relay = 0;
+			watcher = nullptr;
+			watcher_relay = nullptr;
 		}
 
 		fileName.clear();
 		filePath.clear();
 	}
 
-private slots:
+private Q_SLOTS:
 	void dir_changed(const QString &path)
 	{
 		Q_UNUSED(path);
 		QFileInfo fi(filePath);
-		bool exists = fi.exists();
+		const bool exists = fi.exists();
 		if(exists && !fileExisted)
 		{
 			// this means the file was created.  put a

@@ -33,7 +33,7 @@ namespace gpgQCAPlugin
 
 void gpg_waitForFinished(GpgOp *gpg)
 {
-	while(1)
+	while(true)
 	{
 		GpgOp::Event e = gpg->waitForEvent(-1);
 		if(e.type == GpgOp::Event::Finished)
@@ -117,15 +117,15 @@ QString find_bin()
 #ifdef Q_OS_WIN
 	bins << "gpg.exe" << "gpg2.exe";
 #else
-	bins << "gpg" << "gpg2";
+	bins << QStringLiteral("gpg") << QStringLiteral("gpg2");
 #endif
 
 	// Prefer bundled gpg
 	foreach (const QString &bin, bins)
 	{
-		if (check_bin(QCoreApplication::applicationDirPath() + "/" + bin))
+		if (check_bin(QCoreApplication::applicationDirPath() + QLatin1Char('/') + bin))
 		{
-			return QCoreApplication::applicationDirPath() + "/" + bin;
+			return QCoreApplication::applicationDirPath() + QLatin1Char('/') + bin;
 		}
 	}
 
@@ -140,7 +140,7 @@ QString find_bin()
 #ifdef Q_OS_WIN
 	QString pathSep = ";";
 #else
-	QString pathSep = ":";
+	const QString pathSep = QStringLiteral(":");
 #endif
 
 	QStringList paths = QString::fromLocal8Bit(qgetenv("PATH")).split(pathSep, QString::SkipEmptyParts);
@@ -159,9 +159,9 @@ QString find_bin()
 	{
 		foreach (const QString &bin, bins)
 		{
-			if (check_bin(path + "/" + bin))
+			if (check_bin(path + QLatin1Char('/') + bin))
 			{
-				return path + "/" + bin;
+				return path + QLatin1Char('/') + bin;
 			}
 		}
 	}
@@ -173,14 +173,14 @@ QString find_bin()
 QString escape_string(const QString &in)
 {
 	QString out;
-	for(int n = 0; n < in.length(); ++n)
+	for(const QChar &c : in)
 	{
-		if(in[n] == '\\')
-			out += "\\\\";
-		else if(in[n] == ':')
-			out += "\\c";
+		if(c == QLatin1Char('\\'))
+			out += QStringLiteral("\\\\");
+		else if(c == QLatin1Char(':'))
+			out += QStringLiteral("\\c");
 		else
-			out += in[n];
+			out += c;
 	}
 	return out;
 }
@@ -190,14 +190,14 @@ QString unescape_string(const QString &in)
 	QString out;
 	for(int n = 0; n < in.length(); ++n)
 	{
-		if(in[n] == '\\')
+		if(in[n] == QLatin1Char('\\'))
 		{
 			if(n + 1 < in.length())
 			{
-				if(in[n + 1] == '\\')
-					out += '\\';
-				else if(in[n + 1] == 'c')
-					out += ':';
+				if(in[n + 1] == QLatin1Char('\\'))
+					out += QLatin1Char('\\');
+				else if(in[n + 1] == QLatin1Char('c'))
+					out += QLatin1Char(':');
 				++n;
 			}
 		}

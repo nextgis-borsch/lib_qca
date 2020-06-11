@@ -28,14 +28,14 @@ class SProcess : public QProcess
 {
 	Q_OBJECT
 public:
-	SProcess(QObject *parent = 0);
-	~SProcess();
+	SProcess(QObject *parent = nullptr);
+	~SProcess() override;
 
 #ifdef Q_OS_UNIX
 	void setInheritPipeList(const QList<int> &);
 
 protected:
-	virtual void setupChildProcess();
+	void setupChildProcess() override;
 
 private:
 	QList<int> pipeList;

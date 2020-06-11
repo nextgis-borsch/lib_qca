@@ -57,16 +57,16 @@ public:
 	QList<DirItem> dirs;
 	QList<FileItem> files;
 
-	RingWatch(QObject *parent = 0);
-	~RingWatch();
+	RingWatch(QObject *parent = nullptr);
+	~RingWatch() override;
 
 	void add(const QString &filePath);
 	void clear();
 
-signals:
+Q_SIGNALS:
 	void changed(const QString &filePath);
 
-private slots:
+private Q_SLOTS:
 	void dirChanged();
 	void handleChanged();
 };

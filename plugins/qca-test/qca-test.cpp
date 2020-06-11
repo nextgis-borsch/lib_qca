@@ -717,7 +717,7 @@ public:
 		return true;
 	}
 
-private slots:
+private Q_SLOTS:
 	void do_step()
 	{
 		emit diagnosticText(QString("qca-test: TestKeyStoreListContext do_step %1\n").arg(step));
@@ -807,9 +807,7 @@ Provider::Context *TestProvider::createContext(const QString &type)
 class TestPlugin : public QObject, public QCAPlugin
 {
 	Q_OBJECT
-#if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.affinix.qca.Plugin/1.0")
-#endif
 	Q_INTERFACES(QCAPlugin)
 public:
 	virtual Provider *createProvider() { return new TestProvider; }
@@ -817,6 +815,3 @@ public:
 
 #include "qca-test.moc"
 
-#if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(qca_test, TestPlugin);
-#endif

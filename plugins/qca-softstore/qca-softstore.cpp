@@ -30,7 +30,7 @@ using namespace QCA;
 namespace softstoreQCAPlugin {
 
 class softstoreKeyStoreListContext;
-static softstoreKeyStoreListContext *s_keyStoreList = NULL;
+static softstoreKeyStoreListContext *s_keyStoreList = nullptr;
 
 enum KeyType {
 	keyTypeInvalid,
@@ -71,13 +71,13 @@ public:
 	static inline QString typeToString (PKey::Type t) {
 		switch (t) {
 			case PKey::RSA:
-				return "rsa";
+				return QStringLiteral("rsa");
 			case PKey::DSA:
-				return "dsa";
+				return QStringLiteral("dsa");
 			case PKey::DH:
-				return "dh";
+				return QStringLiteral("dh");
 			default:
-				return "";
+				return QLatin1String("");
 		}
 	}
 
@@ -85,9 +85,9 @@ public:
 		const SoftStoreEntry &entry,
 		const QString &serialized,
 		Provider *p
-	) : PKeyBase (p, "rsa"/*typeToString (entry.chain.primary ().subjectPublicKey ().type ())*/) {
+	) : PKeyBase (p, QStringLiteral("rsa")/*typeToString (entry.chain.primary ().subjectPublicKey ().type ())*/) {
 		QCA_logTextMessage (
-			"softstorePKeyBase::softstorePKeyBase1 - entry",
+			QStringLiteral("softstorePKeyBase::softstorePKeyBase1 - entry"),
 			Logger::Debug
 		);
 
@@ -97,14 +97,14 @@ public:
 		_pubkey = _entry.chain.primary ().subjectPublicKey ();
 
 		QCA_logTextMessage (
-			"softstorePKeyBase::softstorePKeyBase1 - return",
+			QStringLiteral("softstorePKeyBase::softstorePKeyBase1 - return"),
 			Logger::Debug
 		);
 	}
 
-	softstorePKeyBase (const softstorePKeyBase &from) : PKeyBase (from.provider (), "rsa"/*typeToString (from._pubkey.type ())*/) {
+	softstorePKeyBase (const softstorePKeyBase &from) : PKeyBase (from.provider (), QStringLiteral("rsa")/*typeToString (from._pubkey.type ())*/) {
 		QCA_logTextMessage (
-			"softstorePKeyBase::softstorePKeyBaseC - entry",
+			QStringLiteral("softstorePKeyBase::softstorePKeyBaseC - entry"),
 			Logger::Debug
 		);
 
@@ -115,59 +115,53 @@ public:
 		_privkey = from._privkey;
 
 		QCA_logTextMessage (
-			"softstorePKeyBase::softstorePKeyBaseC - return",
+			QStringLiteral("softstorePKeyBase::softstorePKeyBaseC - return"),
 			Logger::Debug
 		);
 	}
 
-	~softstorePKeyBase () {
+	~softstorePKeyBase () override {
 		QCA_logTextMessage (
-			"softstorePKeyBase::~softstorePKeyBase - entry",
+			QStringLiteral("softstorePKeyBase::~softstorePKeyBase - entry"),
 			Logger::Debug
 		);
 
 		QCA_logTextMessage (
-			"softstorePKeyBase::~softstorePKeyBase - return",
+			QStringLiteral("softstorePKeyBase::~softstorePKeyBase - return"),
 			Logger::Debug
 		);
 	}
 
-	virtual
 	Provider::Context *
-	clone () const {
+	clone () const override {
 		return new softstorePKeyBase (*this);
 	}
 
 public:
-	virtual
 	bool
-	isNull () const {
+	isNull () const override {
 		return _pubkey.isNull ();
 	}
 
-	virtual
 	PKey::Type
-	type () const {
+	type () const override {
 		return _pubkey.type ();
 	}
 
-	virtual
 	bool
-	isPrivate () const {
+	isPrivate () const override {
 		return _has_privateKeyRole;
 	}
 
-	virtual
 	bool
-	canExport () const {
+	canExport () const override {
 		return !_has_privateKeyRole;
 	}
 
-	virtual
 	void
-	convertToPublic () {
+	convertToPublic () override {
 		QCA_logTextMessage (
-			"softstorePKeyBase::convertToPublic - entry",
+			QStringLiteral("softstorePKeyBase::convertToPublic - entry"),
 			Logger::Debug
 		);
 
@@ -176,41 +170,37 @@ public:
 		}
 
 		QCA_logTextMessage (
-			"softstorePKeyBase::convertToPublic - return",
+			QStringLiteral("softstorePKeyBase::convertToPublic - return"),
 			Logger::Debug
 		);
 	}
 
-	virtual
 	int
-	bits () const {
+	bits () const override {
 		return _pubkey.bitSize ();
 	}
 
-	virtual
 	int
 	maximumEncryptSize (
 		EncryptionAlgorithm alg
-	) const {
+	) const override {
 		return _pubkey.maximumEncryptSize (alg);
 	}
 
-	virtual
 	SecureArray
 	encrypt (
 		const SecureArray &in,
 		EncryptionAlgorithm alg
-	) {
+	) override {
 		return _pubkey.encrypt (in, alg);
 	}
 
-	virtual
 	bool
 	decrypt (
 		const SecureArray &in,
 		SecureArray *out,
 		EncryptionAlgorithm alg
-	) {
+	) override {
 		if (_ensureAccess ()) {
 			return _privkey.decrypt (in, out, alg);
 		}
@@ -219,12 +209,11 @@ public:
 		}
 	}
 
-	virtual
 	void
 	startSign (
 		SignatureAlgorithm alg,
 		SignatureFormat format
-	) {
+	) override {
 		if (_ensureAccess ()) {
 			/*
 			 * We must use one object thought
@@ -236,20 +225,18 @@ public:
 		}
 	}
 
-	virtual
 	void
 	startVerify (
 		SignatureAlgorithm alg,
 		SignatureFormat sf
-	) {
+	) override {
 		_pubkey.startVerify (alg, sf);
 	}
 
-	virtual
 	void
 	update (
 		const MemoryRegion &in
-	) {
+	) override {
 		if (_has_privateKeyRole) {
 			_privkeySign.update (in);
 		}
@@ -258,10 +245,9 @@ public:
 		}
 	}
 
-	virtual
 	QByteArray
-	endSign () {
-		QByteArray r = _privkeySign.signature ();
+	endSign () override {
+		const QByteArray r = _privkeySign.signature ();
 		_privkeySign = PrivateKey ();
 		return r;
 	}
@@ -323,14 +309,14 @@ public:
 		bool ret = false;
 
 		QCA_logTextMessage (
-			"softstorePKeyBase::_ensureAccess - entry",
+			QStringLiteral("softstorePKeyBase::_ensureAccess - entry"),
 			Logger::Debug
 		);
 
 		if (_entry.unlockTimeout != -1) {
 			if (dueTime >= QDateTime::currentDateTime ()) {
 				QCA_logTextMessage (
-					"softstorePKeyBase::_ensureAccess - dueTime reached, clearing",
+					QStringLiteral("softstorePKeyBase::_ensureAccess - dueTime reached, clearing"),
 					Logger::Debug
 				);
 				_privkey = PrivateKey ();
@@ -342,18 +328,18 @@ public:
 		}
 		else {
 			KeyStoreEntry entry;
-			KeyStoreEntryContext *context = NULL;
+			KeyStoreEntryContext *context = nullptr;
 			QString storeId, storeName;
 			ConvertResult cresult;
 
 			QCA_logTextMessage (
-				"softstorePKeyBase::_ensureAccess - no current key, creating",
+				QStringLiteral("softstorePKeyBase::_ensureAccess - no current key, creating"),
 				Logger::Debug
 			);
 
 			// too lazy to create scope
 			context = reinterpret_cast<KeyStoreListContext *> (s_keyStoreList)->entryPassive (_serialized);
-			if (context != NULL) {
+			if (context != nullptr) {
 				storeId = context->storeId ();
 				storeName = context->storeName ();
 				entry.change (context);
@@ -449,7 +435,7 @@ public:
 						{
 							QFile file (_entry.keyReference);
 							if (file.open (QIODevice::ReadOnly)) {
-								QByteArray contents = file.readAll ();
+								const QByteArray contents = file.readAll ();
 
 								PrivateKey k = PrivateKey::fromDER (
 									contents,
@@ -476,7 +462,7 @@ public:
 		}
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstorePKeyBase::_ensureAccess - return ret=%d",
 				ret ? 1 : 0
 			),
@@ -489,76 +475,69 @@ public:
 
 class softstorePKeyContext : public PKeyContext
 {
+    Q_OBJECT
 
 private:
 	PKeyBase *_k;
 
 public:
 	softstorePKeyContext (Provider *p) : PKeyContext (p) {
-		_k = NULL;
+		_k = nullptr;
 	}
 
-	~softstorePKeyContext () {
+	~softstorePKeyContext () override {
 		delete _k;
-		_k = NULL;
+		_k = nullptr;
 	}
 
-	virtual
 	Provider::Context *
-	clone () const {
+	clone () const override {
 		softstorePKeyContext *c = new softstorePKeyContext (*this);
 		c->_k = (PKeyBase *)_k->clone();
 		return c;
 	}
 
 public:
-	virtual
 	QList<PKey::Type>
-	supportedTypes () const {
+	supportedTypes () const override {
 		QList<PKey::Type> list;
 		list += static_cast<softstorePKeyBase *>(_k)->_publicKey ().type ();
 		return list;
 	}
 
-	virtual
 	QList<PKey::Type>
-	supportedIOTypes () const {
+	supportedIOTypes () const override {
 		QList<PKey::Type> list;
 		list += static_cast<softstorePKeyBase *>(_k)->_publicKey ().type ();
 		return list;
 	}
 
-	virtual
 	QList<PBEAlgorithm>
-	supportedPBEAlgorithms () const {
+	supportedPBEAlgorithms () const override {
 		QList<PBEAlgorithm> list;
 		return list;
 	}
 
-	virtual
 	PKeyBase *
-	key () {
+	key () override {
 		return _k;
 	}
 
-	virtual
 	const PKeyBase *
-	key () const {
+	key () const override {
 		return _k;
 	}
 
-	virtual
 	void
-	setKey (PKeyBase *key) {
+	setKey (PKeyBase *key) override {
 		delete _k;
 		_k = key;
 	}
 
-	virtual
 	bool
 	importKey (
 		const PKeyBase *key
-	) {
+	) override {
 		Q_UNUSED(key);
 		return false;
 	}
@@ -578,75 +557,67 @@ public:
 		return 0;
 	}
 
-	virtual
 	QByteArray
-	publicToDER () const {
+	publicToDER () const override {
 		return static_cast<softstorePKeyBase *>(_k)->_publicKey ().toDER ();
 	}
 
-	virtual
 	QString
-	publicToPEM () const {
+	publicToPEM () const override {
 		return static_cast<softstorePKeyBase *>(_k)->_publicKey ().toPEM ();
 	}
 
-	virtual
 	ConvertResult
 	publicFromDER (
 		const QByteArray &in
-	) {
+	) override {
 		Q_UNUSED(in);
 		return ErrorDecode;
 	}
 
-	virtual
 	ConvertResult
 	publicFromPEM (
 		const QString &s
-	) {
+	) override {
 		Q_UNUSED(s);
 		return ErrorDecode;
 	}
 
-	virtual
 	SecureArray
 	privateToDER(
 		const SecureArray &passphrase,
 		PBEAlgorithm pbe
-	) const {
+	) const override {
 		Q_UNUSED(passphrase);
 		Q_UNUSED(pbe);
 		return SecureArray ();
 	}
 
-	virtual
 	QString
 	privateToPEM (
 		const SecureArray &passphrase,
 		PBEAlgorithm pbe
-	) const {
+	) const override {
 		Q_UNUSED(passphrase);
 		Q_UNUSED(pbe);
 		return QString ();
 	}
 
-	virtual
 	ConvertResult
 	privateFromDER (
 		const SecureArray &in,
 		const SecureArray &passphrase
-	) {
+	) override {
 		Q_UNUSED(in);
 		Q_UNUSED(passphrase);
 		return ErrorDecode;
 	}
 
-	virtual
 	ConvertResult
 	privateFromPEM (
 		const QString &s,
 		const SecureArray &passphrase
-	) {
+	) override {
 		Q_UNUSED(s);
 		Q_UNUSED(passphrase);
 		return ErrorDecode;
@@ -655,6 +626,7 @@ public:
 
 class softstoreKeyStoreEntryContext : public KeyStoreEntryContext
 {
+    Q_OBJECT
 private:
 	KeyStoreEntry::Type _item_type;
 	KeyBundle _key;
@@ -683,64 +655,54 @@ public:
 		_serialized = from._serialized;
 	}
 
-	virtual
 	Provider::Context *
-	clone () const {
+	clone () const override {
 		return new softstoreKeyStoreEntryContext (*this);
 	}
 
 public:
-	virtual
 	KeyStoreEntry::Type
-	type () const {
+	type () const override {
 		return KeyStoreEntry::TypeKeyBundle;
 	}
 
-	virtual
 	QString
-	name () const {
+	name () const override {
 		return _entry.name;
 	}
 
-	virtual
 	QString
-	id () const {
+	id () const override {
 		return _entry.name;
 	}
 
-	virtual
 	KeyBundle
-	keyBundle () const {
+	keyBundle () const override {
 		return _key;
 	}
 
-	virtual
 	Certificate
-	certificate () const {
+	certificate () const override {
 		return _entry.chain.primary ();
 	}
 
-	virtual
 	QString
-	storeId () const {
-		return QString ().sprintf ("%s/%s", "qca-softstore", myPrintable (_entry.name));
+	storeId () const override {
+		return QString::asprintf ("%s/%s", "qca-softstore", myPrintable (_entry.name));
 	}
 
-	virtual
 	QString
-	storeName () const {
+	storeName () const override {
 		return _entry.name;
 	}
 
-	virtual
 	bool
-	ensureAccess () {
+	ensureAccess () override {
 		return static_cast<softstorePKeyBase *>(static_cast<PKeyContext *>(_key.privateKey ().context ())->key ())->_ensureAccess ();
 	}
 
-	virtual
 	QString
-	serialize () const {
+	serialize () const override {
 		return _serialized;
 	}
 };
@@ -756,7 +718,7 @@ private:
 public:
 	softstoreKeyStoreListContext (Provider *p) : KeyStoreListContext (p) {
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::softstoreKeyStoreListContext - entry Provider=%p",
 				(void *)p
 			),
@@ -766,57 +728,54 @@ public:
 		_last_id = 0;
 
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::softstoreKeyStoreListContext - return",
+			QStringLiteral("softstoreKeyStoreListContext::softstoreKeyStoreListContext - return"),
 			Logger::Debug
 		);
 	}
 
-	~softstoreKeyStoreListContext () {
+	~softstoreKeyStoreListContext () override {
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::~softstoreKeyStoreListContext - entry",
+			QStringLiteral("softstoreKeyStoreListContext::~softstoreKeyStoreListContext - entry"),
 			Logger::Debug
 		);
 
-		s_keyStoreList = NULL;
+		s_keyStoreList = nullptr;
 
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::~softstoreKeyStoreListContext - return",
+			QStringLiteral("softstoreKeyStoreListContext::~softstoreKeyStoreListContext - return"),
 			Logger::Debug
 		);
 	}
 
-	virtual
 	Provider::Context *
-	clone () const {
+	clone () const override {
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::clone - entry/return",
+			QStringLiteral("softstoreKeyStoreListContext::clone - entry/return"),
 			Logger::Debug
 		);
-		return NULL;
+		return nullptr;
 	}
 
 public:
-	virtual
 	void
-	start () {
+	start () override {
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::start - entry",
+			QStringLiteral("softstoreKeyStoreListContext::start - entry"),
 			Logger::Debug
 		);
 
 		QMetaObject::invokeMethod(this, "doReady", Qt::QueuedConnection);
 
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::start - return",
+			QStringLiteral("softstoreKeyStoreListContext::start - return"),
 			Logger::Debug
 		);
 	}
 
-	virtual
 	void
-	setUpdatesEnabled (bool enabled) {
+	setUpdatesEnabled (bool enabled) override {
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::setUpdatesEnabled - entry/return enabled=%d",
 				enabled ? 1 : 0
 			),
@@ -824,14 +783,13 @@ public:
 		);
 	}
 
-	virtual
 	KeyStoreEntryContext *
 	entry (
 		int id,
 		const QString &entryId
-	) {
+	) override {
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::entry - entry/return id=%d entryId='%s'",
 				id,
 				myPrintable (entryId)
@@ -841,25 +799,24 @@ public:
 
 		Q_UNUSED(id);
 		Q_UNUSED(entryId);
-		return NULL;
+		return nullptr;
 	}
 
-	virtual
 	KeyStoreEntryContext *
 	entryPassive (
 		const QString &serialized
-	) {
-		KeyStoreEntryContext *entry = NULL;
+	) override {
+		KeyStoreEntryContext *entry = nullptr;
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::entryPassive - entry serialized='%s'",
 				myPrintable (serialized)
 			),
 			Logger::Debug
 		);
 
-		if (serialized.startsWith ("qca-softstore/")) {
+		if (serialized.startsWith (QLatin1String("qca-softstore/"))) {
 			SoftStoreEntry sentry;
 
 			if (_deserializeSoftStoreEntry (serialized, sentry)) {
@@ -868,7 +825,7 @@ public:
 		}
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::entryPassive - return entry=%p",
 				(void *)entry
 			),
@@ -878,13 +835,12 @@ public:
 		return entry;
 	}
 
-	virtual
 	KeyStore::Type
-	type (int id) const {
+	type (int id) const override {
 		Q_UNUSED(id);
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::type - entry/return id=%d",
 				id
 			),
@@ -894,23 +850,22 @@ public:
 		return KeyStore::User;
 	}
 
-	virtual
 	QString
-	storeId (int id) const {
+	storeId (int id) const override {
 		QString ret;
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::storeId - entry id=%d",
 				id
 			),
 			Logger::Debug
 		);
 
-		ret = "qca-softstore";
+		ret = QStringLiteral("qca-softstore");
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::storeId - return ret=%s",
 				myPrintable (ret)
 			),
@@ -920,23 +875,22 @@ public:
 		return ret;
 	}
 
-	virtual
 	QString
-	name (int id) const {
+	name (int id) const override {
 		QString ret;
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::name - entry id=%d",
 				id
 			),
 			Logger::Debug
 		);
 
-		ret = "User Software Store";
+		ret = QStringLiteral("User Software Store");
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::name - return ret=%s",
 				myPrintable (ret)
 			),
@@ -946,13 +900,12 @@ public:
 		return ret;
 	}
 
-	virtual
 	QList<KeyStoreEntry::Type>
-	entryTypes (int id) const {
+	entryTypes (int id) const override {
 		Q_UNUSED(id);
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::entryTypes - entry/return id=%d",
 				id
 			),
@@ -965,20 +918,19 @@ public:
 		return list;
 	}
 
-	virtual
 	QList<int>
-	keyStores () {
+	keyStores () override {
 		QList<int> list;
 
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::keyStores - entry",
+			QStringLiteral("softstoreKeyStoreListContext::keyStores - entry"),
 			Logger::Debug
 		);
 
 		list += _last_id;
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::keyStores - return out.size()=%d",
 				list.size ()
 			),
@@ -988,13 +940,12 @@ public:
 		return list;
 	}
 
-	virtual
 	QList<KeyStoreEntryContext *>
-	entryList (int id) {
+	entryList (int id) override {
 		QList<KeyStoreEntryContext*> list;
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::entryList - entry id=%d",
 				id
 			),
@@ -1006,7 +957,7 @@ public:
 		}
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::entryList - return out.size()=%d",
 				list.size ()
 			),
@@ -1021,7 +972,7 @@ public:
 		const QString &t
 	) {
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::_emit_diagnosticText - entry t='%s'",
 				myPrintable (t)
 			),
@@ -1033,23 +984,23 @@ public:
 		emit diagnosticText (t);
 
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::_emit_diagnosticText - return",
+			QStringLiteral("softstoreKeyStoreListContext::_emit_diagnosticText - return"),
 			Logger::Debug
 		);
 	}
 
-private slots:
+private Q_SLOTS:
 	void
 	doReady () {
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::doReady - entry",
+			QStringLiteral("softstoreKeyStoreListContext::doReady - entry"),
 			Logger::Debug
 		);
 
 		emit busyEnd ();
 
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::doReady - return",
+			QStringLiteral("softstoreKeyStoreListContext::doReady - return"),
 			Logger::Debug
 		);
 	}
@@ -1057,14 +1008,14 @@ private slots:
 	void
 	doUpdated () {
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::doUpdated - entry",
+			QStringLiteral("softstoreKeyStoreListContext::doUpdated - entry"),
 			Logger::Debug
 		);
 
 		emit updated ();
 
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::doUpdated - return",
+			QStringLiteral("softstoreKeyStoreListContext::doUpdated - return"),
 			Logger::Debug
 		);
 	}
@@ -1073,40 +1024,40 @@ public:
 	void
 	_updateConfig (const QVariantMap &config, const int maxEntries) {
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::_updateConfig - entry",
+			QStringLiteral("softstoreKeyStoreListContext::_updateConfig - entry"),
 			Logger::Debug
 		);
 
 		QMap<QString, KeyType> keyTypeMap;
-		keyTypeMap["pkcs12"] = keyTypePKCS12;
-		keyTypeMap["pkcs8"] = keyTypePKCS8Inline;
-		keyTypeMap["pkcs8-file-pem"] = keyTypePKCS8FilePEM;
-		keyTypeMap["pkcs8-file-der"] = keyTypePKCS8FileDER;
+		keyTypeMap[QStringLiteral("pkcs12")] = keyTypePKCS12;
+		keyTypeMap[QStringLiteral("pkcs8")] = keyTypePKCS8Inline;
+		keyTypeMap[QStringLiteral("pkcs8-file-pem")] = keyTypePKCS8FilePEM;
+		keyTypeMap[QStringLiteral("pkcs8-file-der")] = keyTypePKCS8FileDER;
 
 		QMap<QString, PublicType> publicTypeMap;
-		publicTypeMap["x509chain"] = publicTypeX509Chain;
+		publicTypeMap[QStringLiteral("x509chain")] = publicTypeX509Chain;
 
 		_last_id++;
 		_entries.clear ();
 
 		for (int i=0;i<maxEntries;i++) {
-			if (config[QString ().sprintf ("entry_%02d_enabled", i)].toBool ()) {
+			if (config[QString::asprintf ("entry_%02d_enabled", i)].toBool ()) {
 				ConvertResult cresult;
 				SoftStoreEntry entry;
 				PublicType publicType = publicTypeInvalid;
 
-				entry.name = config[QString ().sprintf ("entry_%02d_name", i)].toString ();
-				QString stringReferenceType  = config[QString ().sprintf ("entry_%02d_private_type", i)].toString ();
-				QString stringPublicType  = config[QString ().sprintf ("entry_%02d_public_type", i)].toString ();
-				entry.noPassphrase = config[QString ().sprintf ("entry_%02d_no_passphrase", i)].toBool ();
-				entry.unlockTimeout = config[QString ().sprintf ("entry_%02d_unlock_timeout", i)].toInt ();
+				entry.name = config[QString::asprintf ("entry_%02d_name", i)].toString ();
+				const QString stringReferenceType  = config[QString::asprintf ("entry_%02d_private_type", i)].toString ();
+				const QString stringPublicType  = config[QString::asprintf ("entry_%02d_public_type", i)].toString ();
+				entry.noPassphrase = config[QString::asprintf ("entry_%02d_no_passphrase", i)].toBool ();
+				entry.unlockTimeout = config[QString::asprintf ("entry_%02d_unlock_timeout", i)].toInt ();
 
 				if (publicTypeMap.contains (stringPublicType)) {
 					publicType = publicTypeMap[stringPublicType];
 				}
 				else {
 					_emit_diagnosticText (
-						QString ().sprintf (
+						QString::asprintf (
 							"Software Store: Bad public key type of '%s' entry.\n",
 							myPrintable (entry.name)
 						)
@@ -1119,7 +1070,7 @@ public:
 				}
 				else {
 					_emit_diagnosticText (
-						QString ().sprintf (
+						QString::asprintf (
 							"Software Store: Bad private key type of '%s' entry.\n",
 							myPrintable (entry.name)
 						)
@@ -1127,14 +1078,14 @@ public:
 					goto cleanup1;
 				}
 
-				entry.keyReference = config[QString ().sprintf ("entry_%02d_private", i)].toString ();
+				entry.keyReference = config[QString::asprintf ("entry_%02d_private", i)].toString ();
 
 				switch (publicType) {
 					case publicTypeInvalid:
 						goto cleanup1;
 					break;
 					case publicTypeX509Chain:
-						QStringList base64certs = config[QString ().sprintf ("entry_%02d_public", i)].toString ().split ("!");
+						const QStringList base64certs = config[QString::asprintf ("entry_%02d_public", i)].toString ().split (QStringLiteral("!"));
 
 						foreach (const QString &s, base64certs) {
 							entry.chain += Certificate::fromDER (
@@ -1145,7 +1096,7 @@ public:
 
 						if (cresult != ConvertGood) {
 							_emit_diagnosticText (
-								QString ().sprintf (
+								QString::asprintf (
 									"Software Store: Cannot load certificate of '%s' entry.\n",
 									myPrintable (entry.name)
 								)
@@ -1165,7 +1116,7 @@ public:
 		QMetaObject::invokeMethod(s_keyStoreList, "doUpdated", Qt::QueuedConnection);
 
 		QCA_logTextMessage (
-			"softstoreKeyStoreListContext::_updateConfig - return",
+			QStringLiteral("softstoreKeyStoreListContext::_updateConfig - return"),
 			Logger::Debug
 		);
 	}
@@ -1178,14 +1129,14 @@ private:
 		QString serialized;
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::_serializeSoftStoreEntry - entry name=%s",
 				myPrintable (entry.name)
 			),
 			Logger::Debug
 		);
 
-		serialized = QString ().sprintf (
+		serialized = QString::asprintf (
 			"qca-softstore/0/%s/%d/%s/%d/%d/x509chain/",
 			myPrintable (_escapeString (entry.name)),
 			entry.keyReferenceType,
@@ -1199,10 +1150,10 @@ private:
 			list += _escapeString (Base64 ().arrayToString (i.toDER ()));
 		}
 
-		serialized.append (list.join ("/"));
+		serialized.append (list.join (QStringLiteral("/")));
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::_serializeSoftStoreEntry - return serialized='%s'",
 				myPrintable (serialized)
 			),
@@ -1220,7 +1171,7 @@ private:
 		bool ret = false;
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::_deserializeSoftStoreEntry - entry from='%s'",
 				myPrintable (serialized)
 			),
@@ -1229,14 +1180,14 @@ private:
 
 		entry = SoftStoreEntry ();
 
-		QStringList list = serialized.split ("/");
+		const QStringList list = serialized.split (QStringLiteral("/"));
 		int n=0;
 
 		if (list.size () < 8) {
 			goto cleanup;
 		}
 
-		if (list[n++] != "qca-softstore") {
+		if (list[n++] != QLatin1String("qca-softstore")) {
 			goto cleanup;
 		}
 
@@ -1266,7 +1217,7 @@ private:
 	cleanup:
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::_deserializeSoftStoreEntry - return ret=%d chain.size()=%d",
 				ret ? 1 : 0,
 				entry.chain.size ()
@@ -1281,10 +1232,10 @@ private:
 	_keyStoreEntryBySoftStoreEntry (
 		const SoftStoreEntry &sentry
 	) const {
-		softstoreKeyStoreEntryContext *entry = NULL;
+		softstoreKeyStoreEntryContext *entry = nullptr;
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::_keyStoreEntryBySoftStoreEntry - entry name=%s",
 				myPrintable (sentry.name)
 			),
@@ -1317,7 +1268,7 @@ private:
 		);
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreKeyStoreListContext::_keyStoreEntryBySoftStoreEntry - return entry=%p",
 				(void *)entry
 			),
@@ -1334,8 +1285,8 @@ private:
 		QString to;
 
 		foreach (const QChar &c, from) {
-			if (c == '/' || c == '\\') {
-				to += QString ().sprintf ("\\x%04x", c.unicode ());
+			if (c == QLatin1Char('/') || c == QLatin1Char('\\')) {
+				to += QString::asprintf ("\\x%04x", c.unicode ());
 			}
 			else {
 				to += c;
@@ -1354,8 +1305,8 @@ private:
 		for (int i=0;i<from.size ();i++) {
 			QChar c = from[i];
 
-			if (c == '\\') {
-				to += QChar ((ushort)from.mid (i+2, 4).toInt (0, 16));
+			if (c == QLatin1Char('\\')) {
+				to += QChar ((ushort)from.midRef (i+2, 4).toInt (nullptr, 16));
 				i+=5;
 			}
 			else {
@@ -1382,58 +1333,53 @@ public:
 	softstoreProvider () {
 	}
 
-	~softstoreProvider () {
+	~softstoreProvider () override {
 	}
 
 public:
-	virtual
 	int
-	qcaVersion() const {
+	qcaVersion() const override {
 		return QCA_VERSION;
 	}
 
-	virtual
 	void
-	init () {
+	init () override {
 	}
 
-	virtual
 	QString
-	name () const {
-		return "qca-softstore";
+	name () const override {
+		return QStringLiteral("qca-softstore");
 	}
 
-	virtual
 	QStringList
-	features () const {
+	features () const override {
 		QCA_logTextMessage (
-			"softstoreProvider::features - entry/return",
+			QStringLiteral("softstoreProvider::features - entry/return"),
 			Logger::Debug
 		);
 
 		QStringList list;
-		list += "pkey";
-		list += "keystorelist";
+		list += QStringLiteral("pkey");
+		list += QStringLiteral("keystorelist");
 		return list;
 	}
 
-	virtual
 	Context *
 	createContext (
 		const QString &type
-	) {
-		Provider::Context *context = NULL;
+	) override {
+		Provider::Context *context = nullptr;
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreProvider::createContext - entry type='%s'",
 				myPrintable (type)
 			),
 			Logger::Debug
 		);
 
-		if (type == "keystorelist") {
-			if (s_keyStoreList == NULL) {
+		if (type == QLatin1String("keystorelist")) {
+			if (s_keyStoreList == nullptr) {
 				s_keyStoreList = new softstoreKeyStoreListContext (this);
 				s_keyStoreList->_updateConfig (_config, _CONFIG_MAX_ENTRIES);
 			}
@@ -1441,7 +1387,7 @@ public:
 		}
 
 		QCA_logTextMessage (
-			QString ().sprintf (
+			QString::asprintf (
 				"softstoreProvider::createContext - return context=%p",
 				(void *)context
 			),
@@ -1451,48 +1397,46 @@ public:
 		return context;
 	}
 
-	virtual
 	QVariantMap
-	defaultConfig () const {
+	defaultConfig () const override {
 		QVariantMap mytemplate;
 
 		QCA_logTextMessage (
-			"softstoreProvider::defaultConfig - entry/return",
+			QStringLiteral("softstoreProvider::defaultConfig - entry/return"),
 			Logger::Debug
 		);
 
-		mytemplate["formtype"] = "http://affinix.com/qca/forms/qca-softstore#1.0";
+		mytemplate[QStringLiteral("formtype")] = QStringLiteral("http://affinix.com/qca/forms/qca-softstore#1.0");
 		for (int i=0;i<_CONFIG_MAX_ENTRIES;i++) {
-			mytemplate[QString ().sprintf ("entry_%02d_enabled", i)] = false;
-			mytemplate[QString ().sprintf ("entry_%02d_name", i)] = "";
-			mytemplate[QString ().sprintf ("entry_%02d_public_type", i)] = "";
-			mytemplate[QString ().sprintf ("entry_%02d_private_type", i)] = "";
-			mytemplate[QString ().sprintf ("entry_%02d_public", i)] = "";
-			mytemplate[QString ().sprintf ("entry_%02d_private", i)] = "";
-			mytemplate[QString ().sprintf ("entry_%02d_unlock_timeout", i)] = -1;
-			mytemplate[QString ().sprintf ("entry_%02d_no_passphrase", i)] = false;
+			mytemplate[QString::asprintf ("entry_%02d_enabled", i)] = false;
+			mytemplate[QString::asprintf ("entry_%02d_name", i)] = QLatin1String("");
+			mytemplate[QString::asprintf ("entry_%02d_public_type", i)] = QLatin1String("");
+			mytemplate[QString::asprintf ("entry_%02d_private_type", i)] = QLatin1String("");
+			mytemplate[QString::asprintf ("entry_%02d_public", i)] = QLatin1String("");
+			mytemplate[QString::asprintf ("entry_%02d_private", i)] = QLatin1String("");
+			mytemplate[QString::asprintf ("entry_%02d_unlock_timeout", i)] = -1;
+			mytemplate[QString::asprintf ("entry_%02d_no_passphrase", i)] = false;
 		}
 
 		return mytemplate;
 	}
 
-	virtual
 	void
-	configChanged (const QVariantMap &config) {
+	configChanged (const QVariantMap &config) override {
 
 		QCA_logTextMessage (
-			"softstoreProvider::configChanged - entry",
+			QStringLiteral("softstoreProvider::configChanged - entry"),
 			Logger::Debug
 		);
 
 		_config = config;
 
-		if (s_keyStoreList != NULL) {
+		if (s_keyStoreList != nullptr) {
 			s_keyStoreList->_updateConfig (_config, _CONFIG_MAX_ENTRIES);
 		}
 
 		QCA_logTextMessage (
-			"softstoreProvider::configChanged - return",
+			QStringLiteral("softstoreProvider::configChanged - return"),
 			Logger::Debug
 		);
 	}
@@ -1503,17 +1447,11 @@ const int softstoreProvider::_CONFIG_MAX_ENTRIES = 50;
 class softstorePlugin : public QObject, public QCAPlugin
 {
 	Q_OBJECT
-#if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.affinix.qca.Plugin/1.0")
-#endif
 	Q_INTERFACES(QCAPlugin)
 
 public:
-	virtual Provider *createProvider() { return new softstoreProvider; }
+	Provider *createProvider() override { return new softstoreProvider; }
 };
 
 #include "qca-softstore.moc"
-
-#if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(qca_softstore, softstorePlugin)
-#endif

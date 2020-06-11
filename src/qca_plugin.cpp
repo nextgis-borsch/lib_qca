@@ -35,7 +35,7 @@
 #include <QLibrary>
 #include <QPluginLoader>
 
-#define PLUGIN_SUBDIR "crypto"
+#define PLUGIN_SUBDIR QStringLiteral("crypto")
 
 namespace QCA {
 
@@ -58,9 +58,9 @@ QString truncate_log(const QString &in, int size)
 
 	// if the previous char is a newline, then this is a perfect cut.
 	//   otherwise, we need to skip to after the next newline.
-	if(in[at - 1] != '\n')
+	if(in[at - 1] != QLatin1Char('\n'))
 	{
-		while(at < in.length() && in[at] != '\n')
+		while(at < in.length() && in[at] != QLatin1Char('\n'))
 		{
 			++at;
 		}
@@ -68,19 +68,19 @@ QString truncate_log(const QString &in, int size)
 		// at this point we either reached a newline, or end of
 		//   the entire buffer
 
-		if(in[at] == '\n')
+		if(in[at] == QLatin1Char('\n'))
 			++at;
 	}
 
 	return in.mid(at);
 }
 
-static ProviderManager *g_pluginman = 0;
+static ProviderManager *g_pluginman = nullptr;
 
 static void logDebug(const QString &str)
 {
 	if(g_pluginman)
-		g_pluginman->appendDiagnosticText(str + '\n');
+		g_pluginman->appendDiagnosticText(str + QLatin1Char('\n'));
 }
 
 static bool validVersion(int ver)
@@ -104,24 +104,24 @@ private:
 	}
 
 public:
-	static PluginInstance *fromFile(const QString &fname, QString *errstr = 0)
+	static PluginInstance *fromFile(const QString &fname, QString *errstr = nullptr)
 	{
 		QPluginLoader *loader = new QPluginLoader(fname);
 		if(!loader->load())
 		{
 			if(errstr)
-				*errstr = QString("failed to load: %1").arg(loader->errorString());
+				*errstr = QStringLiteral("failed to load: %1").arg(loader->errorString());
 			delete loader;
-			return 0;
+			return nullptr;
 		}
 		QObject *obj = loader->instance();
 		if(!obj)
 		{
 			if(errstr)
-				*errstr = "failed to get instance";
+				*errstr = QStringLiteral("failed to get instance");
 			loader->unload();
 			delete loader;
-			return 0;
+			return nullptr;
 		}
 		PluginInstance *i = new PluginInstance;
 		i->_loader = loader;
@@ -133,7 +133,7 @@ public:
 	static PluginInstance *fromStatic(QObject *obj)
 	{
 		PluginInstance *i = new PluginInstance;
-		i->_loader = 0;
+		i->_loader = nullptr;
 		i->_instance = obj;
 		i->_ownInstance = false;
 		return i;
@@ -142,7 +142,7 @@ public:
 	static PluginInstance *fromInstance(QObject *obj)
 	{
 		PluginInstance *i = new PluginInstance;
-		i->_loader = 0;
+		i->_loader = nullptr;
 		i->_instance = obj;
 		i->_ownInstance = true;
 		return i;
@@ -160,12 +160,15 @@ public:
 		}
 	}
 
+	PluginInstance(const PluginInstance &) = delete;
+	PluginInstance &operator=(const PluginInstance &) = delete;
+
 	void claim()
 	{
 		if(_loader)
-			_loader->moveToThread(0);
+			_loader->moveToThread(nullptr);
 		if(_ownInstance)
-			_instance->moveToThread(0);
+			_instance->moveToThread(nullptr);
 	}
 
 	QObject *instance()
@@ -182,7 +185,7 @@ public:
 	int priority;
 	QMutex m;
 
-	static ProviderItem *load(const QString &fname, QString *out_errstr = 0)
+	static ProviderItem *load(const QString &fname, QString *out_errstr = nullptr)
 	{
 		QString errstr;
 		PluginInstance *i = PluginInstance::fromFile(fname, &errstr);
@@ -190,24 +193,24 @@ public:
 		{
 			if(out_errstr)
 				*out_errstr = errstr;
-			return 0;
+			return nullptr;
 		}
 		QCAPlugin *plugin = qobject_cast<QCAPlugin*>(i->instance());
 		if(!plugin)
 		{
 			if(out_errstr)
-				*out_errstr = "does not offer QCAPlugin interface";
+				*out_errstr = QStringLiteral("does not offer QCAPlugin interface");
 			delete i;
-			return 0;
+			return nullptr;
 		}
 
 		Provider *p = plugin->createProvider();
 		if(!p)
 		{
 			if(out_errstr)
-				*out_errstr = "unable to create provider";
+				*out_errstr = QStringLiteral("unable to create provider");
 			delete i;
-			return 0;
+			return nullptr;
 		}
 
 		ProviderItem *pi = new ProviderItem(i, p);
@@ -215,25 +218,25 @@ public:
 		return pi;
 	}
 
-	static ProviderItem *loadStatic(QObject *instance, QString *errstr = 0)
+	static ProviderItem *loadStatic(QObject *instance, QString *errstr = nullptr)
 	{
 		PluginInstance *i = PluginInstance::fromStatic(instance);
 		QCAPlugin *plugin = qobject_cast<QCAPlugin*>(i->instance());
 		if(!plugin)
 		{
 			if(errstr)
-				*errstr = "does not offer QCAPlugin interface";
+				*errstr = QStringLiteral("does not offer QCAPlugin interface");
 			delete i;
-			return 0;
+			return nullptr;
 		}
 
 		Provider *p = plugin->createProvider();
 		if(!p)
 		{
 			if(errstr)
-				*errstr = "unable to create provider";
+				*errstr = QStringLiteral("unable to create provider");
 			delete i;
-			return 0;
+			return nullptr;
 		}
 
 		ProviderItem *pi = new ProviderItem(i, p);
@@ -242,7 +245,7 @@ public:
 
 	static ProviderItem *fromClass(Provider *p)
 	{
-		ProviderItem *pi = new ProviderItem(0, p);
+		ProviderItem *pi = new ProviderItem(nullptr, p);
 		return pi;
 	}
 
@@ -278,7 +281,7 @@ public:
 		if(instance)
 			return instance->instance();
 		else
-			return 0;
+			return nullptr;
 	}
 
 private:
@@ -300,7 +303,7 @@ private:
 ProviderManager::ProviderManager()
 {
 	g_pluginman = this;
-	def = 0;
+	def = nullptr;
 	scanned_static = false;
 }
 
@@ -310,7 +313,7 @@ ProviderManager::~ProviderManager()
 		def->deinit();
 	unloadAll();
 	delete def;
-	g_pluginman = 0;
+	g_pluginman = nullptr;
 }
 
 void ProviderManager::scan()
@@ -320,42 +323,42 @@ void ProviderManager::scan()
 	// check static first, but only once
 	if(!scanned_static)
 	{
-		logDebug("Checking Qt static plugins:");
-		QObjectList list = QPluginLoader::staticInstances();
+		logDebug(QStringLiteral("Checking Qt static plugins:"));
+		const QObjectList list = QPluginLoader::staticInstances();
 		if(list.isEmpty())
-			logDebug("  (none)");
+			logDebug(QStringLiteral("  (none)"));
 		for(int n = 0; n < list.count(); ++n)
 		{
 			QObject *instance = list[n];
-			QString className = QString::fromLatin1(instance->metaObject()->className());
+			const QString className = QString::fromLatin1(instance->metaObject()->className());
 
 			QString errstr;
 			ProviderItem *i = ProviderItem::loadStatic(instance, &errstr);
 			if(!i)
 			{
-				logDebug(QString("  %1: %2").arg(className, errstr));
+				logDebug(QStringLiteral("  %1: %2").arg(className, errstr));
 				continue;
 			}
 
-			QString providerName = i->p->name();
+			const QString providerName = i->p->name();
 			if(haveAlready(providerName))
 			{
-				logDebug(QString("  %1: (as %2) already loaded provider, skipping").arg(className, providerName));
+				logDebug(QStringLiteral("  %1: (as %2) already loaded provider, skipping").arg(className, providerName));
 				delete i;
 				continue;
 			}
 
-			int ver = i->p->qcaVersion();
+			const int ver = i->p->qcaVersion();
 			if(!validVersion(ver))
 			{
-				errstr.sprintf("plugin version 0x%06x is in the future", ver);
-				logDebug(QString("  %1: (as %2) %3").arg(className, providerName, errstr));
+				errstr = QString::asprintf("plugin version 0x%06x is in the future", ver);
+				logDebug(QStringLiteral("  %1: (as %2) %3").arg(className, providerName, errstr));
 				delete i;
 				continue;
 			}
 
 			addItem(i, get_default_priority(providerName));
-			logDebug(QString("  %1: loaded as %2").arg(className, providerName));
+			logDebug(QStringLiteral("  %1: loaded as %2").arg(className, providerName));
 		}
 		scanned_static = true;
 	}
@@ -366,39 +369,39 @@ void ProviderManager::scan()
 
 	const QStringList dirs = pluginPaths();
 	if(dirs.isEmpty())
-		logDebug("No Qt Library Paths");
-	for(QStringList::ConstIterator it = dirs.begin(); it != dirs.end(); ++it)
+		logDebug(QStringLiteral("No Qt Library Paths"));
+	for(const QString &dirIt : dirs)
 	{
 #ifdef DEVELOPER_MODE
-		logDebug(QString("Checking QCA build tree Path: %1").arg(QDir::toNativeSeparators(*it)));
+		logDebug(QStringLiteral("Checking QCA build tree Path: %1").arg(QDir::toNativeSeparators(dirIt)));
 #else
-		logDebug(QString("Checking Qt Library Path: %1").arg(QDir::toNativeSeparators(*it)));
+		logDebug(QStringLiteral("Checking Qt Library Path: %1").arg(QDir::toNativeSeparators(dirIt)));
 #endif
-		QDir libpath(*it);
+		QDir libpath(dirIt);
 		QDir dir(libpath.filePath(PLUGIN_SUBDIR));
 		if(!dir.exists())
 		{
-			logDebug("  (No 'crypto' subdirectory)");
+			logDebug(QStringLiteral("  (No 'crypto' subdirectory)"));
 			continue;
 		}
 
-		QStringList entryList = dir.entryList(QDir::Files);
+		const QStringList entryList = dir.entryList(QDir::Files);
 		if(entryList.isEmpty())
 		{
-			logDebug("  (No files in 'crypto' subdirectory)");
+			logDebug(QStringLiteral("  (No files in 'crypto' subdirectory)"));
 			continue;
 		}
 
 		foreach(const QString &maybeFile, entryList)
 		{
-			QFileInfo fi(dir.filePath(maybeFile));
+			const QFileInfo fi(dir.filePath(maybeFile));
 
-			QString filePath = fi.filePath(); // file name with path
-			QString fileName = fi.fileName(); // just file name
+			const QString filePath = fi.filePath(); // file name with path
+			const QString fileName = fi.fileName(); // just file name
 
 			if(!QLibrary::isLibrary(filePath))
 			{
-				logDebug(QString("  %1: not a library, skipping").arg(fileName));
+				logDebug(QStringLiteral("  %1: not a library, skipping").arg(fileName));
 				continue;
 			}
 
@@ -415,7 +418,7 @@ void ProviderManager::scan()
 			}
 			if(haveFile)
 			{
-				logDebug(QString("  %1: already loaded file, skipping").arg(fileName));
+				logDebug(QStringLiteral("  %1: already loaded file, skipping").arg(fileName));
 				continue;
 			}
 
@@ -423,38 +426,38 @@ void ProviderManager::scan()
 			ProviderItem *i = ProviderItem::load(filePath, &errstr);
 			if(!i)
 			{
-				logDebug(QString("  %1: %2").arg(fileName, errstr));
+				logDebug(QStringLiteral("  %1: %2").arg(fileName, errstr));
 				continue;
 			}
 
-			QString className = QString::fromLatin1(i->objectInstance()->metaObject()->className());
+			const QString className = QString::fromLatin1(i->objectInstance()->metaObject()->className());
 
-			QString providerName = i->p->name();
+			const QString providerName = i->p->name();
 			if(haveAlready(providerName))
 			{
-				logDebug(QString("  %1: (class: %2, as %3) already loaded provider, skipping").arg(fileName, className, providerName));
+				logDebug(QStringLiteral("  %1: (class: %2, as %3) already loaded provider, skipping").arg(fileName, className, providerName));
 				delete i;
 				continue;
 			}
 
-			int ver = i->p->qcaVersion();
+			const int ver = i->p->qcaVersion();
 			if(!validVersion(ver))
 			{
-				errstr.sprintf("plugin version 0x%06x is in the future", ver);
-				logDebug(QString("  %1: (class: %2, as %3) %4").arg(fileName, className, providerName, errstr));
+				errstr = QString::asprintf("plugin version 0x%06x is in the future", ver);
+				logDebug(QStringLiteral("  %1: (class: %2, as %3) %4").arg(fileName, className, providerName, errstr));
 				delete i;
 				continue;
 			}
 
 			if(skip_plugins(def).contains(providerName))
 			{
-				logDebug(QString("  %1: (class: %2, as %3) explicitly disabled, skipping").arg(fileName, className, providerName));
+				logDebug(QStringLiteral("  %1: (class: %2, as %3) explicitly disabled, skipping").arg(fileName, className, providerName));
 				delete i;
 				continue;
 			}
 
 			addItem(i, get_default_priority(providerName));
-			logDebug(QString("  %1: (class: %2) loaded as %3").arg(fileName, className, providerName));
+			logDebug(QStringLiteral("  %1: (class: %2) loaded as %3").arg(fileName, className, providerName));
 		}
 	}
 #endif
@@ -464,26 +467,25 @@ bool ProviderManager::add(Provider *p, int priority)
 {
 	QMutexLocker locker(&providerMutex);
 
-	QString providerName = p->name();
+	const QString providerName = p->name();
 
 	if(haveAlready(providerName))
 	{
-		logDebug(QString("Directly adding: %1: already loaded provider, skipping").arg(providerName));
+		logDebug(QStringLiteral("Directly adding: %1: already loaded provider, skipping").arg(providerName));
 		return false;
 	}
 
-	int ver = p->qcaVersion();
+	const int ver = p->qcaVersion();
 	if(!validVersion(ver))
 	{
-		QString errstr;
-		errstr.sprintf("plugin version 0x%06x is in the future", ver);
-		logDebug(QString("Directly adding: %1: %2").arg(providerName, errstr));
+		QString errstr = QString::asprintf("plugin version 0x%06x is in the future", ver);
+		logDebug(QStringLiteral("Directly adding: %1: %2").arg(providerName, errstr));
 		return false;
 	}
 
 	ProviderItem *i = ProviderItem::fromClass(p);
 	addItem(i, priority);
-	logDebug(QString("Directly adding: %1: loaded").arg(providerName));
+	logDebug(QStringLiteral("Directly adding: %1: loaded").arg(providerName));
 	return true;
 }
 
@@ -501,7 +503,7 @@ bool ProviderManager::unload(const QString &name)
 			providerItemList.removeAt(n);
 			providerList.removeAt(n);
 
-			logDebug(QString("Unloaded: %1").arg(name));
+			logDebug(QStringLiteral("Unloaded: %1").arg(name));
 			return true;
 		}
 	}
@@ -520,12 +522,12 @@ void ProviderManager::unloadAll()
 	while(!providerItemList.isEmpty())
 	{
 		ProviderItem *i = providerItemList.first();
-		QString name = i->p->name();
+		const QString name = i->p->name();
 		delete i;
 		providerItemList.removeFirst();
 		providerList.removeFirst();
 
-		logDebug(QString("Unloaded: %1").arg(name));
+		logDebug(QStringLiteral("Unloaded: %1").arg(name));
 	}
 }
 
@@ -547,8 +549,8 @@ void ProviderManager::setDefault(Provider *p)
 
 Provider *ProviderManager::find(Provider *_p) const
 {
-	ProviderItem *i = 0;
-	Provider *p = 0;
+	ProviderItem *i = nullptr;
+	Provider *p = nullptr;
 
 	providerMutex.lock();
 	if(_p == def)
@@ -577,8 +579,8 @@ Provider *ProviderManager::find(Provider *_p) const
 
 Provider *ProviderManager::find(const QString &name) const
 {
-	ProviderItem *i = 0;
-	Provider *p = 0;
+	ProviderItem *i = nullptr;
+	Provider *p = nullptr;
 
 	providerMutex.lock();
 	if(def && name == def->name())
@@ -610,7 +612,7 @@ Provider *ProviderManager::findFor(const QString &name, const QString &type) con
 	if(name.isEmpty())
 	{
 		providerMutex.lock();
-		QList<ProviderItem*> list = providerItemList;
+		const QList<ProviderItem*> list = providerItemList;
 		providerMutex.unlock();
 
 		// find the first one that can do it
@@ -629,14 +631,14 @@ Provider *ProviderManager::findFor(const QString &name, const QString &type) con
 		if(p && p->features().contains(type))
 			return p;
 
-		return 0;
+		return nullptr;
 	}
 	else
 	{
 		Provider *p = find(name);
 		if(p && p->features().contains(type))
 			return p;
-		return 0;
+		return nullptr;
 	}
 }
 
@@ -644,7 +646,7 @@ void ProviderManager::changePriority(const QString &name, int priority)
 {
 	QMutexLocker locker(&providerMutex);
 
-	ProviderItem *i = 0;
+	ProviderItem *i = nullptr;
 	int n = 0;
 	for(; n < providerItemList.count(); ++n)
 	{
@@ -668,7 +670,7 @@ int ProviderManager::getPriority(const QString &name)
 {
 	QMutexLocker locker(&providerMutex);
 
-	ProviderItem *i = 0;
+	ProviderItem *i = nullptr;
 	for(int n = 0; n < providerItemList.count(); ++n)
 	{
 		ProviderItem *pi = providerItemList[n];
@@ -695,7 +697,7 @@ QStringList ProviderManager::allFeatures() const
 		featureList = p->features();
 
 	providerMutex.lock();
-	QList<ProviderItem*> list = providerItemList;
+	const QList<ProviderItem*> list = providerItemList;
 	providerMutex.unlock();
 	for(int n = 0; n < list.count(); ++n)
 	{
@@ -743,7 +745,7 @@ void ProviderManager::addItem(ProviderItem *item, int priority)
 		// for -1, make the priority the same as the last item
 		if(!providerItemList.isEmpty())
 		{
-			ProviderItem *last = providerItemList.last();
+			const ProviderItem *last = providerItemList.last();
 			item->priority = last->priority;
 		}
 		else
@@ -758,7 +760,7 @@ void ProviderManager::addItem(ProviderItem *item, int priority)
 		int n = 0;
 		for(; n < providerItemList.count(); ++n)
 		{
-			ProviderItem *i = providerItemList[n];
+			const ProviderItem *i = providerItemList[n];
 			if(i->priority >= priority)
 				break;
 		}
@@ -786,22 +788,22 @@ bool ProviderManager::haveAlready(const QString &name) const
 
 void ProviderManager::mergeFeatures(QStringList *a, const QStringList &b)
 {
-	for(QStringList::ConstIterator it = b.begin(); it != b.end(); ++it)
+	for(const QString &s : b)
 	{
-		if(!a->contains(*it))
-			a->append(*it);
+		if(!a->contains(s))
+			a->append(s);
 	}
 }
 
 int ProviderManager::get_default_priority(const QString &name) const
 {
-	QStringList list = plugin_priorities(def);
+	const QStringList list = plugin_priorities(def);
 	foreach(const QString &s, list)
 	{
 		// qca_default already sanity checks the strings
-		int n = s.indexOf(':');
-		QString sname = s.mid(0, n);
-		int spriority = s.mid(n + 1).toInt();
+		const int n = s.indexOf(QLatin1Char(':'));
+		const QString sname = s.mid(0, n);
+		const int spriority = s.midRef(n + 1).toInt();
 		if(sname == name)
 			return spriority;
 	}

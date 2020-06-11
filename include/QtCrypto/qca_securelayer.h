@@ -80,7 +80,7 @@ enum SecurityLevel
    implementation, and that data is encrypted (or otherwise
    protected, depending on the setup). The SecureLayer
    implementation then emits the readyReadOutgoing() signal,
-   and the application uses readOutgoing() to retrieve the the
+   and the application uses readOutgoing() to retrieve the
    encrypted data from the SecureLayer implementation.  The
    encrypted data is then sent out on the network.
 
@@ -111,7 +111,7 @@ public:
 
 	   \param parent the parent object for this object
 	*/
-	SecureLayer(QObject *parent = 0);
+	SecureLayer(QObject *parent = nullptr);
 
 	/**
 	   Returns true if the layer has a meaningful "close".
@@ -176,7 +176,7 @@ public:
 
 	   \param plainBytes the number of bytes that were read.
 	*/
-	virtual QByteArray readOutgoing(int *plainBytes = 0) = 0;
+	virtual QByteArray readOutgoing(int *plainBytes = nullptr) = 0;
 
 	/**
 	   This allows you to read data without having it
@@ -247,7 +247,7 @@ public:
 	*/
 	TLSSession(const TLSSession &from);
 
-	~TLSSession();
+	~TLSSession() override;
 
 	/**
 	   Assignment operator
@@ -345,7 +345,7 @@ public:
 	    \param provider the name of the provider, if a specific provider
 	    is required
 	*/
-	explicit TLS(QObject *parent = 0, const QString &provider = QString());
+	explicit TLS(QObject *parent = nullptr, const QString &provider = QString());
 
 	/**
 	   Constructor for Transport Layer Security connection.
@@ -358,12 +358,12 @@ public:
 	   \param provider the name of the provider, if a specific provider is
 	   required
 	*/
-	explicit TLS(Mode mode, QObject *parent = 0, const QString &provider = QString());
+	explicit TLS(Mode mode, QObject *parent = nullptr, const QString &provider = QString());
 
 	/**
 	   Destructor
 	*/
-	~TLS();
+	~TLS() override;
 
 	/**
 	   Reset the connection
@@ -381,7 +381,7 @@ public:
 	   \param version the protocol Version that the cipher
 	   suites are required for
 
-	   \return list of the the names of the cipher suites
+	   \return list of the names of the cipher suites
 	   supported.
 	*/
 	QStringList supportedCipherSuites(const Version &version = TLS_v1) const;
@@ -681,16 +681,16 @@ foreach(const CertificateInfoOrdered &info, tls->issuerList())
 	CertificateChain peerCertificateChain() const;
 
 	// reimplemented
-	virtual bool isClosable() const;
-	virtual int bytesAvailable() const;
-	virtual int bytesOutgoingAvailable() const;
-	virtual void close();
-	virtual void write(const QByteArray &a);
-	virtual QByteArray read();
-	virtual void writeIncoming(const QByteArray &a);
-	virtual QByteArray readOutgoing(int *plainBytes = 0);
-	virtual QByteArray readUnprocessed();
-	virtual int convertBytesWritten(qint64 encryptedBytes);
+	bool isClosable() const override;
+	int bytesAvailable() const override;
+	int bytesOutgoingAvailable() const override;
+	void close() override;
+	void write(const QByteArray &a) override;
+	QByteArray read() override;
+	void writeIncoming(const QByteArray &a) override;
+	QByteArray readOutgoing(int *plainBytes = nullptr) override;
+	QByteArray readUnprocessed() override;
+	int convertBytesWritten(qint64 encryptedBytes) override;
 
 	/**
 	   Determine the number of packets available to be
@@ -783,11 +783,7 @@ protected:
 	   \param signal the name of the signal that has been
 	   connected to.
 	*/
-#if QT_VERSION >= 0x050000
-	void connectNotify(const QMetaMethod &signal);
-#else
-	void connectNotify(const char *signal);
-#endif
+	void connectNotify(const QMetaMethod &signal) override;
 
 	/**
 	   Called when a connection is removed from a particular signal
@@ -795,11 +791,7 @@ protected:
 	   \param signal the name of the signal that has been
 	   disconnected from.
 	*/
-#if QT_VERSION >= 0x050000
-	void disconnectNotify(const QMetaMethod &signal);
-#else
-	void disconnectNotify(const char *signal);
-#endif
+	void disconnectNotify(const QMetaMethod &signal) override;
 
 private:
 	Q_DISABLE_COPY(TLS)
@@ -977,9 +969,9 @@ public:
 	   specified, or specified as empty, then any provider is 
 	   acceptable.
 	*/
-	explicit SASL(QObject *parent = 0, const QString &provider = QString());
+	explicit SASL(QObject *parent = nullptr, const QString &provider = QString());
 
-	~SASL();
+	~SASL() override;
 
 	/**
 	   Reset the %SASL mechanism
@@ -1177,13 +1169,13 @@ public:
 	void continueAfterAuthCheck();
 
 	// reimplemented
-	virtual int bytesAvailable() const;
-	virtual int bytesOutgoingAvailable() const;
-	virtual void write(const QByteArray &a);
-	virtual QByteArray read();
-	virtual void writeIncoming(const QByteArray &a);
-	virtual QByteArray readOutgoing(int *plainBytes = 0);
-	virtual int convertBytesWritten(qint64 encryptedBytes);
+	int bytesAvailable() const override;
+	int bytesOutgoingAvailable() const override;
+	void write(const QByteArray &a) override;
+	QByteArray read() override;
+	void writeIncoming(const QByteArray &a) override;
+	QByteArray readOutgoing(int *plainBytes = nullptr) override;
+	int convertBytesWritten(qint64 encryptedBytes) override;
 
 Q_SIGNALS:
 	/**

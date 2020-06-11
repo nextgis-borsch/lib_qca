@@ -44,13 +44,13 @@ class saslProvider : public Provider
 {
 public:
 	saslProvider();
-	void init();
-	~saslProvider();
-	int qcaVersion() const;
-	QString name() const;
-	QString credit() const;
-	QStringList features() const;
-	Context *createContext(const QString &type);
+	void init() override;
+	~saslProvider() override;
+	int qcaVersion() const override;
+	QString name() const override;
+	QString credit() const override;
+	QStringList features() const override;
+	Context *createContext(const QString &type) override;
 
 	bool client_init;
 	bool server_init;
@@ -177,8 +177,8 @@ public:
 	{
 		if(i->result)
 			return;
-		QByteArray cs = s.toUtf8();
-		int len = cs.length();
+		const QByteArray cs = s.toUtf8();
+		const int len = cs.length();
 		char *p = new char[len+1];
 		memcpy(p, cs.data(), len);
 		p[len] = 0;
@@ -204,7 +204,7 @@ static QByteArray makeByteArray(const void *in, unsigned int len)
 
 static QString addrString(const SASLContext::HostPort &hp)
 {
-	return (hp.addr + ';' + QString::number(hp.port));
+	return (hp.addr + QLatin1Char(';') + QString::number(hp.port));
 }
 
 //----------------------------------------------------------------------------
@@ -213,6 +213,7 @@ static QString addrString(const SASLContext::HostPort &hp)
 
 class saslContext : public SASLContext
 {
+    Q_OBJECT
 	saslProvider *g;
 
 	// core props
@@ -262,19 +263,19 @@ private:
 	{
 		if(con) {
 			sasl_dispose(&con);
-			con = 0;
+			con = nullptr;
 		}
-		need = 0;
+		need = nullptr;
 		if(callbacks) {
 			delete callbacks;
-			callbacks = 0;
+			callbacks = nullptr;
 		}
 
-		localAddr = "";
-		remoteAddr = "";
+		localAddr = QLatin1String("");
+		remoteAddr = QLatin1String("");
 		maxoutbuf = 128;
-		sc_username = "";
-		sc_authzid = "";
+		sc_username = QLatin1String("");
+		sc_authzid = QLatin1String("");
 
 		result_authCondition = SASL::AuthFail;
 		result_haveClientInit = false;
@@ -291,7 +292,7 @@ private:
 		secflags = 0;
 		ssf_min = 0;
 		ssf_max = 0;
-		ext_authid = "";
+		ext_authid = QLatin1String("");
 		ext_ssf = 0;
 	}
 
@@ -301,20 +302,21 @@ private:
 		secprops.min_ssf = ssf_min;
 		secprops.max_ssf = ssf_max;
 		secprops.maxbufsize = SASL_BUFSIZE;
-		secprops.property_names = NULL;
-		secprops.property_values = NULL;
+		secprops.property_names = nullptr;
+		secprops.property_values = nullptr;
 		secprops.security_flags = secflags;
 		int r = sasl_setprop(con, SASL_SEC_PROPS, &secprops);
 		if(r != SASL_OK)
 			return false;
 
 		if(!ext_authid.isEmpty()) {
-			const char *authid = ext_authid.toLatin1().data();
+			const QByteArray ext_authidBA = ext_authid.toLatin1();
+			const char *authid = ext_authidBA.data();
 			sasl_ssf_t ssf = ext_ssf;
 			r = sasl_setprop(con, SASL_SSF_EXTERNAL, &ssf);
 			if(r != SASL_OK)
 				return false;
-			r = sasl_setprop(con, SASL_AUTH_EXTERNAL, &authid);
+			r = sasl_setprop(con, SASL_AUTH_EXTERNAL, authid);
 			if(r != SASL_OK)
 				return false;
 		}
@@ -363,8 +365,8 @@ private:
 	static int scb_checkauth(sasl_conn_t *, void *context, const char *requested_user, unsigned, const char *auth_identity, unsigned, const char *, unsigned, struct propctx *)
 	{
 		saslContext *that = (saslContext *)context;
-		that->sc_username = auth_identity; // yeah yeah, it looks
-		that->sc_authzid = requested_user; // backwards, but it is right
+		that->sc_username = QString::fromLatin1(auth_identity); // yeah yeah, it looks
+		that->sc_authzid = QString::fromLatin1(requested_user); // backwards, but it is right
 		that->ca_flag = true;
 		return SASL_OK;
 	}
@@ -377,22 +379,23 @@ private:
 			const char *clientout, *m;
 			unsigned int clientoutlen;
 
-			need = 0;
-			QString list = result_mechlist.join(" ");
+
+			need = nullptr;
+			const QString list = result_mechlist.join(QStringLiteral(" "));
 			int r;
-			while(1) {
+			while(true) {
 				if(need)
 					params.extractHave(need);
 				if(in_sendFirst)
 					r = sasl_client_start(con, list.toLatin1().data(), &need, &clientout, &clientoutlen, &m);
 				else
-					r = sasl_client_start(con, list.toLatin1().data(), &need, NULL, NULL, &m);
+					r = sasl_client_start(con, list.toLatin1().data(), &need, nullptr, nullptr, &m);
 				if(r != SASL_INTERACT)
 					break;
 
 				params.applyInteract(need);
 				if(params.missingAny()) {
-					out_mech = m;
+					out_mech = QString::fromLatin1(m);
 					result_result = Params;
 					return;
 				}
@@ -403,7 +406,7 @@ private:
 				return;
 			}
 
-			out_mech = m;
+			out_mech = QString::fromLatin1(m);
 			if(in_sendFirst && clientout) {
 				out_buf = makeByteArray(clientout, clientoutlen);
 				result_haveClientInit = true;
@@ -423,7 +426,7 @@ private:
 			const char *clientout;
 			unsigned int clientoutlen;
 			int r;
-			while(1) {
+			while(true) {
 				if(need)
 					params.extractHave(need);
 				//printf("sasl_client_step(con, {%s}, %d, &need, &clientout, &clientoutlen);\n", in_buf.data(), in_buf.size());
@@ -458,7 +461,7 @@ private:
 	{
 		if(step == 0) {
 			if(!ca_skip) {
-				const char *clientin = 0;
+				const char *clientin = nullptr;
 				unsigned int clientinlen = 0;
 				if(in_useClientInit) {
 					clientin = in_clientInit.data();
@@ -467,7 +470,7 @@ private:
 				const char *serverout;
 				unsigned int serveroutlen;
 				ca_flag = false;
-				int r = sasl_server_start(con, in_mech.toLatin1().data(), clientin, clientinlen, &serverout, &serveroutlen);
+				const int r = sasl_server_start(con, in_mech.toLatin1().data(), clientin, clientinlen, &serverout, &serveroutlen);
 				if(r != SASL_OK && r != SASL_CONTINUE) {
 					setAuthCondition(r);
 					result_result = Error;
@@ -497,7 +500,7 @@ private:
 			if(!ca_skip) {
 				const char *serverout;
 				unsigned int serveroutlen;
-				int r = sasl_server_step(con, in_buf.data(), in_buf.size(), &serverout, &serveroutlen);
+				const int r = sasl_server_step(con, in_buf.data(), in_buf.size(), &serverout, &serveroutlen);
 				if(r != SASL_OK && r != SASL_CONTINUE) {
 					setAuthCondition(r);
 					result_result = Error;
@@ -536,7 +539,7 @@ private:
 
 		int at = 0;
 		out->resize(0);
-		while(1) {
+		while(true) {
 			int size = in.size() - at;
 			if(size == 0)
 				break;
@@ -551,7 +554,7 @@ private:
 				r = sasl_decode(con, in.data() + at, size, &outbuf, &len);
 			if(r != SASL_OK)
 				return false;
-			int oldsize = out->size();
+			const int oldsize = out->size();
 			out->resize(oldsize + len);
 			memcpy(out->data() + oldsize, outbuf, len);
 			at += size;
@@ -570,84 +573,84 @@ public:
 	{
 		result_result = Success;
 		g = _g;
-		con = 0;
-		callbacks = 0;
+		con = nullptr;
+		callbacks = nullptr;
 
 		reset();
 	}
 
-	~saslContext()
+	~saslContext() override
 	{
 		reset();
 	}
 
-	virtual Provider::Context *clone() const
+	Provider::Context *clone() const override
 	{
-		return 0;
+		return nullptr;
 	}
 
-	virtual Result result() const
+	Result result() const override
 	{
 		return result_result;
 	}
 
-	virtual void reset()
+	void reset() override
 	{
 		resetState();
 		resetParams();
 	}
 
-	virtual void setup(const QString &_service, const QString &_host, const HostPort *local, const HostPort *remote, const QString &ext_id, int _ext_ssf)
+	void setup(const QString &_service, const QString &_host, const HostPort *local, const HostPort *remote, const QString &ext_id, int _ext_ssf) override
 	{
 		service = _service;
 		host = _host;
-		localAddr = local ? addrString(*local) : "";
-		remoteAddr = remote ? addrString(*remote) : "";
+		localAddr = local ? addrString(*local) : QLatin1String("");
+		remoteAddr = remote ? addrString(*remote) : QLatin1String("");
 		ext_authid = ext_id;
 		ext_ssf = _ext_ssf;
 	}
 
-	virtual int ssf() const
+	int ssf() const override
 	{
 		return result_ssf;
 	}
 
-	virtual void startClient(const QStringList &mechlist, bool allowClientSendFirst)
+	void startClient(const QStringList &mechlist, bool allowClientSendFirst) override
 	{
 		resetState();
 
 		in_sendFirst = allowClientSendFirst;
 
 		if(!g->client_init) {
-			sasl_client_init(NULL);
+			sasl_client_init(nullptr);
 			g->client_init = true;
 		}
 
 		callbacks = new sasl_callback_t[5];
 
 		callbacks[0].id = SASL_CB_GETREALM;
-		callbacks[0].proc = 0;
-		callbacks[0].context = 0;
+		callbacks[0].proc = nullptr;
+		callbacks[0].context = nullptr;
 
 		callbacks[1].id = SASL_CB_USER;
-		callbacks[1].proc = 0;
-		callbacks[1].context = 0;
+		callbacks[1].proc = nullptr;
+		callbacks[1].context = nullptr;
 
 		callbacks[2].id = SASL_CB_AUTHNAME;
-		callbacks[2].proc = 0;
-		callbacks[2].context = 0;
+		callbacks[2].proc = nullptr;
+		callbacks[2].context = nullptr;
 
 		callbacks[3].id = SASL_CB_PASS;
-		callbacks[3].proc = 0;
-		callbacks[3].context = 0;
+		callbacks[3].proc = nullptr;
+		callbacks[3].context = nullptr;
 
 		callbacks[4].id = SASL_CB_LIST_END;
-		callbacks[4].proc = 0;
-		callbacks[4].context = 0;
+		callbacks[4].proc = nullptr;
+		callbacks[4].context = nullptr;
 
 		result_result = Error;
 
-		int r = sasl_client_new(service.toLatin1().data(), host.toLatin1().data(), localAddr.isEmpty() ? 0 : localAddr.toLatin1().data(), remoteAddr.isEmpty() ? 0 : remoteAddr.toLatin1().data(), callbacks, 0, &con);
+		const int r = sasl_client_new(service.toLatin1().data(), host.toLatin1().data(), localAddr.isEmpty() ? nullptr : localAddr.toLatin1().data(), remoteAddr.isEmpty() ? nullptr : remoteAddr.toLatin1().data(), callbacks, 0, &con);
 		if(r != SASL_OK) {
 			setAuthCondition(r);
 			doResultsReady();
@@ -670,14 +673,14 @@ public:
 	}
 
 	// TODO: make use of disableServerSendLast
-	virtual void startServer(const QString &realm, bool disableServerSendLast)
+	void startServer(const QString &realm, bool disableServerSendLast) override
 	{
 		Q_UNUSED(disableServerSendLast);
 		resetState();
 
-		g->appname = SASL_APP;
+		g->appname = QStringLiteral(SASL_APP);
 		if(!g->server_init) {
-			sasl_server_init(NULL, QFile::encodeName(g->appname));
+			sasl_server_init(nullptr, QFile::encodeName(g->appname).constData());
 			g->server_init = true;
 		}
 
@@ -688,12 +691,12 @@ public:
 		callbacks[0].context = this;
 
 		callbacks[1].id = SASL_CB_LIST_END;
-		callbacks[1].proc = 0;
-		callbacks[1].context = 0;
+		callbacks[1].proc = nullptr;
+		callbacks[1].context = nullptr;
 
 		result_result = Error;
 
-		int r = sasl_server_new(service.toLatin1().data(), host.toLatin1().data(), !realm.isEmpty() ? realm.toLatin1().data() : 0, localAddr.isEmpty() ? 0 : localAddr.toLatin1().data(), remoteAddr.isEmpty() ? 0 : remoteAddr.toLatin1().data(), callbacks, 0, &con);
+		int r = sasl_server_new(service.toLatin1().data(), host.toLatin1().data(), !realm.isEmpty() ? realm.toLatin1().data() : nullptr, localAddr.isEmpty() ? nullptr : localAddr.toLatin1().data(), remoteAddr.isEmpty() ? nullptr : remoteAddr.toLatin1().data(), callbacks, 0, &con);
 		if(r != SASL_OK) {
 			setAuthCondition(r);
 			doResultsReady();
@@ -707,10 +710,10 @@ public:
 		}
 
 		const char *ml;
-		r = sasl_listmech(con, 0, 0, " ", 0, &ml, 0, 0);
+		r = sasl_listmech(con, nullptr, nullptr, " ", nullptr, &ml, nullptr, nullptr);
 		if(r != SASL_OK)
 			return;
-		result_mechlist = QString::fromUtf8(ml).split(' ');
+		result_mechlist = QString::fromUtf8(ml).split(QLatin1Char(' '));
 
 		servermode = true;
 		step = 0;
@@ -721,7 +724,7 @@ public:
 		return;
 	}
 
-	virtual void serverFirstStep(const QString &mech, const QByteArray *clientInit)
+	void serverFirstStep(const QString &mech, const QByteArray *clientInit) override
 	{
 		in_mech = mech;
 		if(clientInit) {
@@ -734,13 +737,13 @@ public:
 		doResultsReady();
 	}
 
-	virtual SASL::Params clientParams() const
+	SASL::Params clientParams() const override
 	{
-		SASLParams::SParams sparams = params.missing();
+		const SASLParams::SParams sparams = params.missing();
 		return SASL::Params(sparams.user, sparams.authzid, sparams.pass, sparams.realm);
 	}
 
-	virtual void setClientParams(const QString *user, const QString *authzid, const SecureArray *pass, const QString *realm)
+	void setClientParams(const QString *user, const QString *authzid, const SecureArray *pass, const QString *realm) override
 	{
 		if(user)
 			params.setUsername(*user);
@@ -752,23 +755,23 @@ public:
 			params.setRealm(*realm);
 	}
 
-	virtual QString username() const
+	QString username() const override
 	{
 		return sc_username;
 	}
 
-	virtual QString authzid() const
+	QString authzid() const override
 	{
 		return sc_authzid;
 	}
 
-	virtual void nextStep(const QByteArray &from_net)
+	void nextStep(const QByteArray &from_net) override
 	{
 		in_buf = from_net;
 		tryAgain();
 	}
 
-	virtual void tryAgain()
+	void tryAgain() override
 	{
 		if(servermode)
 			serverTryAgain();
@@ -777,7 +780,7 @@ public:
 		doResultsReady();
 	}
 
-	virtual QString mech() const
+	QString mech() const override
 	{
 		if (servermode)
 			return in_mech;
@@ -785,18 +788,18 @@ public:
 			return out_mech;
 	}
 
-	virtual QStringList mechlist() const
+	QStringList mechlist() const override
 	{
 		return result_mechlist;
 	}
 
-	virtual QStringList realmlist() const
+	QStringList realmlist() const override
 	{
 		// TODO
 		return QStringList();
 	}
 
-	virtual void setConstraints(SASL::AuthFlags f, int minSSF, int maxSSF)
+	void setConstraints(SASL::AuthFlags f, int minSSF, int maxSSF) override
 	{
 		int sf = 0;
 		if( !(f & SASL::AllowPlain) )
@@ -819,14 +822,14 @@ public:
 		ssf_max = maxSSF;
 	}
 
-	virtual bool waitForResultsReady(int msecs)
+	bool waitForResultsReady(int msecs) override
 	{
 		// TODO: for now, all operations block anyway
 		Q_UNUSED(msecs);
 		return true;
 	}
 
-	virtual void update(const QByteArray &from_net, const QByteArray &from_app)
+	void update(const QByteArray &from_net, const QByteArray &from_app) override
 	{
 		bool ok = true;
 		if(!from_app.isEmpty())
@@ -841,36 +844,36 @@ public:
 		doResultsReady();
 	}
 
-	virtual bool haveClientInit() const
+	bool haveClientInit() const override
 	{
 		return result_haveClientInit;
 	}
 
-	virtual QByteArray stepData() const
+	QByteArray stepData() const override
 	{
 		return out_buf;
 	}
 
-	virtual QByteArray to_net()
+	QByteArray to_net() override
 	{
-		QByteArray a = result_to_net;
+		const QByteArray a = result_to_net;
 		result_to_net.clear();
 		return a;
 	}
 
-	virtual int encoded() const
+	int encoded() const override
 	{
 		return result_encoded;
 	}
 
-	virtual QByteArray to_app()
+	QByteArray to_app() override
 	{
-		QByteArray a = result_plain;
+		const QByteArray a = result_plain;
 		result_plain.clear();
 		return a;
 	}
 
-	virtual SASL::AuthCondition authCondition() const
+	SASL::AuthCondition authCondition() const override
 	{
 		return result_authCondition;
 	}
@@ -902,7 +905,7 @@ int saslProvider::qcaVersion() const
 
 QString saslProvider::name() const
 {
-	return "qca-cyrus-sasl";
+	return QStringLiteral("qca-cyrus-sasl");
 }
 
 QString saslProvider::credit() const
@@ -913,17 +916,17 @@ QString saslProvider::credit() const
 QStringList saslProvider::features() const
 {
 	QStringList list;
-	list += "sasl";
+	list += QStringLiteral("sasl");
 
 	return list;
 }
 
 Provider::Context *saslProvider::createContext(const QString &type)
 {
-	if ( type == "sasl" )
+	if ( type == QLatin1String("sasl") )
 		return new saslContext( this );
 
-	return 0;
+	return nullptr;
 }
 
 } // namespace saslQCAPlugin
@@ -937,16 +940,11 @@ using namespace saslQCAPlugin;
 class saslPlugin : public QObject, public QCAPlugin
 {
 	Q_OBJECT
-#if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.affinix.qca.Plugin/1.0")
-#endif
 	Q_INTERFACES(QCAPlugin)
 public:
-	virtual Provider *createProvider() { return new saslProvider; }
+	Provider *createProvider() override { return new saslProvider; }
 };
 
 #include "qca-cyrus-sasl.moc"
 
-#if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(qca_cyrus_sasl, saslPlugin)
-#endif

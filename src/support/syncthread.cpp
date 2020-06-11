@@ -27,20 +27,16 @@
 
 namespace QCA {
 
-QByteArray methodReturnType(const QMetaObject *obj, const QByteArray &method, const QList<QByteArray> argTypes)
+QByteArray methodReturnType(const QMetaObject *obj, const QByteArray &method, const QList<QByteArray> argTypes) // clazy:exclude=function-args-by-ref NOLINT(performance-unnecessary-value-param) TODO make argTypes const & when we break ABI
 {
 	for(int n = 0; n < obj->methodCount(); ++n)
 	{
 		QMetaMethod m = obj->method(n);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-		QByteArray sig = m.methodSignature();
-#else
-		QByteArray sig = m.signature();
-#endif
+		const QByteArray sig = m.methodSignature();
 		int offset = sig.indexOf('(');
 		if(offset == -1)
 			continue;
-		QByteArray name = sig.mid(0, offset);
+		const QByteArray name = sig.mid(0, offset);
 		if(name != method)
 			continue;
 		if(m.parameterTypes() != argTypes)
@@ -63,19 +59,11 @@ bool invokeMethodWithVariants(QObject *obj, const QByteArray &method, const QVar
 
 	// get return type
 	int metatype = QMetaType::Void;
-	QByteArray retTypeName = methodReturnType(obj->metaObject(), method, argTypes);
-#if QT_VERSION >= 0x050000
+	const QByteArray retTypeName = methodReturnType(obj->metaObject(), method, argTypes);
 	if(!retTypeName.isEmpty() && retTypeName != "void")
-#else
-	if(!retTypeName.isEmpty())
-#endif
 	{
 		metatype = QMetaType::type(retTypeName.data());
-#if QT_VERSION >= 0x050000
 		if(metatype == QMetaType::UnknownType) // lookup failed
-#else
-		if(metatype == QMetaType::Void) // lookup failed
-#endif
 			return false;
 	}
 
@@ -88,7 +76,7 @@ bool invokeMethodWithVariants(QObject *obj, const QByteArray &method, const QVar
 
 	if(metatype != QMetaType::Void)
 	{
-		retval = QVariant(metatype, (const void *)0);
+		retval = QVariant(metatype, (const void *)nullptr);
 		retarg = QGenericReturnArgument(retval.typeName(), retval.data());
 	}
 
@@ -119,11 +107,11 @@ public:
 
 	Private(SyncThread *_q) : QObject(_q), q(_q)
 	{
-		loop = 0;
-		agent = 0;
+		loop = nullptr;
+		agent = nullptr;
 	}
 
-private slots:
+public Q_SLOTS:
 	void agent_started();
 	void agent_call_ret(bool success, const QVariant &ret);
 };
@@ -132,16 +120,16 @@ class SyncThreadAgent : public QObject
 {
 	Q_OBJECT
 public:
-	SyncThreadAgent(QObject *parent = 0) : QObject(parent)
+	SyncThreadAgent(QObject *parent = nullptr) : QObject(parent)
 	{
 		QMetaObject::invokeMethod(this, "started", Qt::QueuedConnection);
 	}
 
-signals:
+Q_SIGNALS:
 	void started();
 	void call_ret(bool success, const QVariant &ret);
 
-public slots:
+public Q_SLOTS:
 	void call_do(QObject *obj, const QByteArray &method, const QVariantList &args)
 	{
 		QVariant ret;
@@ -204,15 +192,15 @@ void SyncThread::run()
 	d->m.lock();
 	d->loop = new QEventLoop;
 	d->agent = new SyncThreadAgent;
-	connect(d->agent, SIGNAL(started()), d, SLOT(agent_started()), Qt::DirectConnection);
-	connect(d->agent, SIGNAL(call_ret(bool, const QVariant &)), d, SLOT(agent_call_ret(bool, const QVariant &)), Qt::DirectConnection);
+	connect(d->agent, &SyncThreadAgent::started, d, &Private::agent_started, Qt::DirectConnection);
+	connect(d->agent, &SyncThreadAgent::call_ret, d, &Private::agent_call_ret, Qt::DirectConnection);
 	d->loop->exec();
 	d->m.lock();
 	atEnd();
 	delete d->agent;
 	delete d->loop;
-	d->agent = 0;
-	d->loop = 0;
+	d->agent = nullptr;
+	d->loop = nullptr;
 	d->w.wakeOne();
 	d->m.unlock();
 }

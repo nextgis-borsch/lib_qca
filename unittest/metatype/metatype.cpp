@@ -38,10 +38,9 @@ class TestClass1 : public QObject
 
 public:
     TestClass1() { };
-    ~TestClass1() { };
-    TestClass1(const TestClass1 & ):QObject( 0 ) { };
+    TestClass1(const TestClass1 & ):QObject( nullptr ) { };
 
-public slots:
+public Q_SLOTS:
     void voidMethod() { };
     QString qstringMethod()  { return QString(); };
     bool boolMethod( const QString & )  { return true; };
@@ -64,7 +63,7 @@ class MetaTypeUnitTest : public QObject
 {
   Q_OBJECT
 
-private slots:
+private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
     void returnTypeTest();
@@ -90,11 +89,7 @@ void MetaTypeUnitTest::returnTypeTest()
     QList<QByteArray> args;
 
     // returns a null type name because that is what void does...
-#if QT_VERSION >= 0x050000
     QCOMPARE( QByteArray( "void" ), QCA::methodReturnType( testClass1.metaObject(), QByteArray( "voidMethod" ), args ) );
-#else
-    QCOMPARE( QByteArray(), QCA::methodReturnType( testClass1.metaObject(), QByteArray( "voidMethod" ), args ) );
-#endif
     QCOMPARE( QByteArray( "QString" ), QCA::methodReturnType( testClass1.metaObject(), QByteArray( "qstringMethod" ), args ) );
 
     // returns a null type, because args don't match
@@ -128,10 +123,10 @@ void MetaTypeUnitTest::invokeMethodTest()
     QVariantList args;
 
     bool ret;
-    ret = QCA::invokeMethodWithVariants( testClass1, QByteArray( "voidMethod" ), args, 0 );
+    ret = QCA::invokeMethodWithVariants( testClass1, QByteArray( "voidMethod" ), args, nullptr );
     QVERIFY( ret );
 
-    ret = QCA::invokeMethodWithVariants( testClass1, QByteArray( "noSuchMethod" ), args, 0 );
+    ret = QCA::invokeMethodWithVariants( testClass1, QByteArray( "noSuchMethod" ), args, nullptr );
     QVERIFY( ret == false );
 
     QVariant stringRes;
@@ -156,7 +151,7 @@ void MetaTypeUnitTest::invokeMethodTest()
 
     result = QString();
     args.clear();
-    QString myString( "test words" );
+    QString myString = QStringLiteral( "test words" );
     args << myString;
     ret = QCA::invokeMethodWithVariants( testClass1, QByteArray( "returnArg" ), args, &result );
     QVERIFY( ret );
@@ -164,14 +159,14 @@ void MetaTypeUnitTest::invokeMethodTest()
 
     ret = QCA::invokeMethodWithVariants( testClass1, QByteArray( "returnRepeatArg" ), args, &result );
     QVERIFY( ret );
-    QCOMPARE( result.toString(), myString + myString );
+    QCOMPARE( result.toString(), QString( myString + myString ) );
 
     // 9 arguments - no matching method
-    result = QString( "unchanged" );
+    result = QStringLiteral( "unchanged" );
     args << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0;
     ret = QCA::invokeMethodWithVariants( testClass1, QByteArray( "tenArgs" ), args, &result );
     QVERIFY( ret == false );
-    QCOMPARE( result.toString(), QString( "unchanged" ) );
+    QCOMPARE( result.toString(), QStringLiteral( "unchanged" ) );
 
     // 10 args
     args << 0;
@@ -180,11 +175,11 @@ void MetaTypeUnitTest::invokeMethodTest()
     QCOMPARE( result.toString(), myString );
 
     // 11 args
-    result = QString( "unchanged" );
+    result = QStringLiteral( "unchanged" );
     args << 0;
     ret = QCA::invokeMethodWithVariants( testClass1, QByteArray( "elevenArgs" ), args, &result );
     QVERIFY( ret == false );
-    QCOMPARE( result.toString(), QString( "unchanged" ) );
+    QCOMPARE( result.toString(), QStringLiteral( "unchanged" ) );
 
     delete testClass1;
 }

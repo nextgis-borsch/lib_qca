@@ -38,13 +38,6 @@
 
 #include <QIODevice>
 
-// Qt5 comes with QStringLiteral for wrapping string literals, which Qt4 does
-// not have. It is needed if the headers are built with QT_NO_CAST_FROM_ASCII.
-// Defining it here as QString::fromUtf8 for convenience.
-#ifndef QStringLiteral
-#define QStringLiteral(str) QString::fromUtf8(str)
-#endif
-
 namespace QCA {
 
 /**
@@ -87,7 +80,7 @@ public:
         */
 	Random(const Random &from);
 
-	~Random();
+	~Random() override;
 
         /**
 	   Assignment operator
@@ -232,7 +225,7 @@ public:
         */
 	Hash(const Hash &from);
 
-	~Hash();
+	~Hash() override;
 
 	/**
 	   Assignment operator
@@ -265,7 +258,7 @@ public:
 	   a Hash sub-class object to calculate additional
 	   hashes.
 	*/
-	virtual void clear();
+	void clear() override;
 
 	/**
 	   Update a hash, adding more of the message contents
@@ -278,7 +271,7 @@ public:
 
 	   \param a the byte array to add to the hash
 	*/
-	virtual void update(const MemoryRegion &a);
+	void update(const MemoryRegion &a) override;
 
 	/**
 	   \overload
@@ -340,7 +333,7 @@ if ( f.open( QIODevice::ReadOnly ) )
 	   reuse the Hash object, you should call clear() and
 	   start to update() again.
 	*/
-	virtual MemoryRegion final();
+	MemoryRegion final() override;
 
 	/**
 	   %Hash a byte array, returning it as another
@@ -669,7 +662,7 @@ public:
 	*/
 	Cipher(const Cipher &from);
 
-	~Cipher();
+	~Cipher() override;
 
 	/**
 	   Assignment operator
@@ -733,7 +726,7 @@ public:
 	/**
 	   reset the cipher object, to allow re-use
 	*/
-	virtual void clear();
+	void clear() override;
 
 	/**
 	   pass in a byte array of data, which will be encrypted or decrypted
@@ -742,20 +735,20 @@ public:
 
 	   \param a the array of data to encrypt / decrypt
 	*/
-	virtual MemoryRegion update(const MemoryRegion &a);
+	MemoryRegion update(const MemoryRegion &a) override;
 
 	/**
 	   complete the block of data, padding as required, and returning
 	   the completed block
 	*/
-	virtual MemoryRegion final();
+	MemoryRegion final() override;
 
 	/**
 	   Test if an update() or final() call succeeded.
 
 	   \return true if the previous call succeeded
 	*/
-	virtual bool ok() const;
+	bool ok() const override;
 
 	/**
 	   Reset / reconfigure the Cipher
@@ -847,7 +840,7 @@ public:
 	*/
 	MessageAuthenticationCode(const MessageAuthenticationCode &from);
 
-	~MessageAuthenticationCode();
+	~MessageAuthenticationCode() override;
 
 	/**
 	   Assignment operator.
@@ -899,7 +892,7 @@ public:
 	   doesn't need to be changed, you don't need to call
 	   setup() again, since the key can just be reused.
 	*/
-	virtual void clear();
+	void clear() override;
 
 	/**
 	   Update the MAC, adding more of the message contents
@@ -908,7 +901,7 @@ public:
 
 	   \param array the message contents
 	*/
-	virtual void update(const MemoryRegion &array);
+	void update(const MemoryRegion &array) override;
 
 	/**
 	   Finalises input and returns the MAC result
@@ -921,7 +914,7 @@ public:
 	   reuse the %MessageAuthenticationCode object, you
 	   should call clear() and start to update() again.
 	*/
-	virtual MemoryRegion final();
+	MemoryRegion final() override;
 
 	/**
 	   Initialise the MAC algorithm
@@ -959,7 +952,7 @@ public:
 	*/
 	KeyDerivationFunction(const KeyDerivationFunction &from);
 
-	~KeyDerivationFunction();
+	~KeyDerivationFunction() override;
 
 	/**
 	   Assignment operator
@@ -1076,6 +1069,63 @@ public:
 	*/
 	explicit PBKDF2(const QString &algorithm = QStringLiteral("sha1"), const QString &provider = QString())
 		: KeyDerivationFunction(withAlgorithm(QStringLiteral("pbkdf2"), algorithm), provider) {}
+};
+
+/**
+   \class HKDF qca_basic.h QtCrypto
+   \since 2.3
+
+   HMAC-based extract-and-expand key derivation function
+
+   This class implements HMAC-based Extract-and-Expand Key Derivation Function,
+   as specified in RFC5869.
+
+   \ingroup UserAPI
+*/
+class QCA_EXPORT HKDF : public Algorithm
+{
+public:
+	/**
+	   Standard constructor
+
+	   \param algorithm the name of the hashing algorithm to use
+	   \param provider the name of the provider to use, if available
+	*/
+	explicit HKDF(const QString &algorithm = QStringLiteral("sha256"), const QString &provider = QString());
+
+	/**
+	   Standard copy constructor
+
+	   \param from the KeyDerivationFunction to copy from
+	*/
+	HKDF(const HKDF &from);
+
+	~HKDF() override;
+
+	/**
+	   Assignment operator
+
+	   Copies the state (including key) from one HKDF
+	   to another
+
+	   \param from the HKDF to assign from
+	*/
+	HKDF & operator=(const HKDF &from);
+
+	/**
+	   Generate the key from a specified secret, salt value, and an additional info
+
+	   \note key length is ignored for some functions
+
+	   \param secret the secret (password or passphrase)
+	   \param salt the salt to use
+	   \param info the info to use
+	   \param keyLength the length of key to return
+
+	   \return the derived key
+	*/
+	SymmetricKey makeKey(const SecureArray &secret, const InitializationVector &salt,
+						 const InitializationVector &info, unsigned int keyLength);
 };
 
 }

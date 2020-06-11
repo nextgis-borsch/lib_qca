@@ -19,8 +19,6 @@
 
 #pragma once
 
-#define QPROC_SIGNAL_RELAY
-
 #include "qpipe.h"
 #include "sprocess.h"
 #include "gpgproc.h"
@@ -32,19 +30,19 @@ class QProcessSignalRelay : public QObject
 {
 	Q_OBJECT
 public:
-	QProcessSignalRelay(QProcess *proc, QObject *parent = 0)
+	QProcessSignalRelay(QProcess *proc, QObject *parent = nullptr)
 	:QObject(parent)
 	{
 		qRegisterMetaType<QProcess::ProcessError>("QProcess::ProcessError");
-		connect(proc, SIGNAL(started()), SLOT(proc_started()), Qt::QueuedConnection);
-		connect(proc, SIGNAL(readyReadStandardOutput()), SLOT(proc_readyReadStandardOutput()), Qt::QueuedConnection);
-		connect(proc, SIGNAL(readyReadStandardError()), SLOT(proc_readyReadStandardError()), Qt::QueuedConnection);
-		connect(proc, SIGNAL(bytesWritten(qint64)), SLOT(proc_bytesWritten(qint64)), Qt::QueuedConnection);
-		connect(proc, SIGNAL(finished(int)), SLOT(proc_finished(int)), Qt::QueuedConnection);
-		connect(proc, SIGNAL(error(QProcess::ProcessError)), SLOT(proc_error(QProcess::ProcessError)), Qt::QueuedConnection);
+		connect(proc, &QProcess::started, this, &QProcessSignalRelay::proc_started, Qt::QueuedConnection);
+		connect(proc, &QProcess::readyReadStandardOutput, this, &QProcessSignalRelay::proc_readyReadStandardOutput, Qt::QueuedConnection);
+		connect(proc, &QProcess::readyReadStandardError, this, &QProcessSignalRelay::proc_readyReadStandardError, Qt::QueuedConnection);
+		connect(proc, &QProcess::bytesWritten, this, &QProcessSignalRelay::proc_bytesWritten, Qt::QueuedConnection);
+		connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &QProcessSignalRelay::proc_finished, Qt::QueuedConnection);
+		connect(proc, &QProcess::errorOccurred, this, &QProcessSignalRelay::proc_error, Qt::QueuedConnection);
 	}
 
-signals:
+Q_SIGNALS:
 	void started();
 	void readyReadStandardOutput();
 	void readyReadStandardError();
@@ -52,7 +50,7 @@ signals:
 	void finished(int);
 	void error(QProcess::ProcessError);
 
-public slots:
+public Q_SLOTS:
 	void proc_started()
 	{
 		emit started();
@@ -100,9 +98,7 @@ public:
 	QStringList args;
 	GPGProc::Mode mode;
 	SProcess *proc;
-#ifdef QPROC_SIGNAL_RELAY
 	QProcessSignalRelay *proc_relay;
-#endif
 	QCA::QPipe pipeAux, pipeCommand, pipeStatus;
 	QByteArray statusBuf;
 	QStringList statusLines;
@@ -123,13 +119,13 @@ public:
 	QByteArray leftover_stderr;
 
 	Private(GPGProc *_q);
-	~Private();
+	~Private() override;
 	void closePipes();
 	void reset(ResetMode mode);
 	bool setupPipes(bool makeAux);
 	void setupArguments();
 
-public slots:
+public Q_SLOTS:
 	void doStart();
 	void aux_written(int x);
 	void aux_error(QCA::QPipeEnd::Error);

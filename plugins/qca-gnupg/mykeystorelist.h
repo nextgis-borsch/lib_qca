@@ -41,27 +41,27 @@ public:
 	QMutex ringMutex;
 
 	MyKeyStoreList(QCA::Provider *p);
-	~MyKeyStoreList();
+	~MyKeyStoreList() override;
 
 	// reimplemented Provider::Context
-	QCA::Provider::Context *clone() const;
+	QCA::Provider::Context *clone() const override;
 
 	// reimplemented KeyStoreListContext
-	QString name(int) const;
-	QCA::KeyStore::Type type(int) const;
-	QString storeId(int) const;
-	QList<int> keyStores();
+	QString name(int) const override;
+	QCA::KeyStore::Type type(int) const override;
+	QString storeId(int) const override;
+	QList<int> keyStores() override;
 
-	void start();
+	void start() override;
 
-	bool isReadOnly(int) const;
+	bool isReadOnly(int) const override;
 
-	QList<QCA::KeyStoreEntry::Type> entryTypes(int) const;
-	QList<QCA::KeyStoreEntryContext*> entryList(int);
-	QCA::KeyStoreEntryContext *entry(int, const QString &entryId);
-	QCA::KeyStoreEntryContext *entryPassive(const QString &serialized);
-	QString writeEntry(int, const QCA::PGPKey &key);
-	bool removeEntry(int, const QString &entryId);
+	QList<QCA::KeyStoreEntry::Type> entryTypes(int) const override;
+	QList<QCA::KeyStoreEntryContext*> entryList(int) override;
+	QCA::KeyStoreEntryContext *entry(int, const QString &entryId) override;
+	QCA::KeyStoreEntryContext *entryPassive(const QString &serialized) override;
+	QString writeEntry(int, const QCA::PGPKey &key) override;
+	bool removeEntry(int, const QString &entryId) override;
 
 	static MyKeyStoreList *instance();
 	void ext_keyStoreLog(const QString &str);
@@ -71,7 +71,7 @@ public:
 	QCA::PGPKey publicKeyFromId(const QString &keyId);
 	QCA::PGPKey secretKeyFromId(const QString &keyId);
 
-private slots:
+private Q_SLOTS:
 	void gpg_finished();
 	void ring_changed(const QString &filePath);
 

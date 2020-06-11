@@ -90,7 +90,7 @@ if(entry.ensureAvailable())
 
    \code
 KeyStoreEntryWatcher *watcher = new KeyStoreEntryWatcher(entry);
-connect(watcher, SIGNAL(available()), SLOT(entry_available()));
+connect(watcher, &KeyStoreEntryWatcher::available, this, &YourClass::entry_available);
 ...
 void entry_available()
 {
@@ -174,7 +174,7 @@ public:
 	*/
 	KeyStoreEntry(const KeyStoreEntry &from);
 
-	~KeyStoreEntry();
+	~KeyStoreEntry() override;
 
 	/**
 	   Standard assignment operator
@@ -361,9 +361,9 @@ public:
 	   \param e the KeyStoreEntry to monitor
 	   \param parent the parent object for this object
 	*/
-	explicit KeyStoreEntryWatcher(const KeyStoreEntry &e, QObject *parent = 0);
+	explicit KeyStoreEntryWatcher(const KeyStoreEntry &e, QObject *parent = nullptr);
 
-	~KeyStoreEntryWatcher();
+	~KeyStoreEntryWatcher() override;
 
 	/**
 	   The KeyStoreEntry that is being monitored
@@ -437,7 +437,7 @@ public:
 	*/
 	KeyStore(const QString &id, KeyStoreManager *keyStoreManager);
 
-	~KeyStore();
+	~KeyStore() override;
 
 	/**
 	   Check if this KeyStore is valid
@@ -715,8 +715,8 @@ public:
 
 	   \param parent the parent for this object
 	*/
-	KeyStoreManager(QObject *parent = 0);
-	~KeyStoreManager();
+	KeyStoreManager(QObject *parent = nullptr);
+	~KeyStoreManager() override;
 
 	/**
 	   Initialize all key store providers

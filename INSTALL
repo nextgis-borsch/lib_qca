@@ -1,7 +1,7 @@
 Installing QCA
 --------------
 
-QCA requires Qt 4.7 or greater.
+QCA requires Qt 5.5 or greater.
 
 For Unix/Linux/Mac/Windows:
 
@@ -17,7 +17,6 @@ Notes
 
   CMAKE_INSTALL_PREFIX - must be defined otherwise QCA will be installed
                          in Qt prefix (by default: "")
-  QT4_BUILD - forced Qt4 building (by default: OFF)
   BUILD_TESTS - build unittests (by default: ON)
   BUILD_TOOLS - build mozcerts and qcatool (by default: ON)
   QCA_SUFFIX - suffix will be used for library, qcatool binary,
@@ -53,10 +52,4 @@ Please report problems to:
   http://bugs.kde.org
 
 Official git repo:
-  http://quickgit.kde.org/?p=qca.git
-
-KDE Projects page:
-  http://projects.kde.org/projects/kdesupport/qca
-
-Official homepage:
-  http://delta.affinix.com/qca/
+  https://invent.kde.org/kde/qca

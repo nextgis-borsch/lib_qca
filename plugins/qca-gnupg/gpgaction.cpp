@@ -32,7 +32,7 @@ static QDateTime getTimestamp(const QString &s)
 	if(s.isEmpty())
 		return QDateTime();
 
-	if(s.contains('T'))
+	if(s.contains(QLatin1Char('T')))
 	{
 		return QDateTime::fromString(s, Qt::ISODate);
 	}
@@ -62,7 +62,7 @@ static QByteArray getCString(const QByteArray &a)
 			else if(c == 'x' && n + 2 < a.size())
 			{
 				++n;
-				QByteArray hex = a.mid(n, 2);
+				const QByteArray hex = a.mid(n, 2);
 				++n; // only skip one, loop will skip the next
 
 				bool ok;
@@ -90,7 +90,7 @@ static QByteArray getCString(const QByteArray &a)
 static bool stringToKeyList(const QString &outstr, GpgOp::KeyList *_keylist, QString *_keyring)
 {
 	GpgOp::KeyList keyList;
-	QStringList lines = outstr.split('\n');
+	const QStringList lines = outstr.split(QLatin1Char('\n'));
 
 	if(lines.count() < 1)
 		return false;
@@ -103,7 +103,7 @@ static bool stringToKeyList(const QString &outstr, GpgOp::KeyList *_keylist, QSt
 	// if the second line isn't a divider, we are dealing
 	// with a new version of gnupg that doesn't give us
 	// the keyring file on gpg --list-keys --with-colons
-	if(it == lines.constEnd() || (*it).isEmpty() || (*it).at(0) != '-')
+	if(it == lines.constEnd() || (*it).isEmpty() || (*it).at(0) != QLatin1Char('-'))
 	{
 		// first line wasn't the keyring name...
 		keyring.clear();
@@ -118,7 +118,7 @@ static bool stringToKeyList(const QString &outstr, GpgOp::KeyList *_keylist, QSt
 
 	for(; it != lines.constEnd(); ++it)
 	{
-		QStringList f = (*it).split(':');
+		const QStringList f = (*it).split(QLatin1Char(':'));
 		if(f.count() < 1)
 			continue;
 		QString type = f[0];
@@ -127,22 +127,22 @@ static bool stringToKeyList(const QString &outstr, GpgOp::KeyList *_keylist, QSt
 		bool primary = false; // primary key or sub key
 		// bool sec = false; // private key or not
 
-		if(type == "pub")
+		if(type == QLatin1String("pub"))
 		{
 			key = true;
 			primary = true;
 		}
-		else if(type == "sec")
+		else if(type == QLatin1String("sec"))
 		{
 			key = true;
 			primary = true;
 			// sec = true;
 		}
-		else if(type == "sub")
+		else if(type == QLatin1String("sub"))
 		{
 			key = true;
 		}
-		else if(type == "ssb")
+		else if(type == QLatin1String("ssb"))
 		{
 			key = true;
 			// sec = true;
@@ -155,12 +155,12 @@ static bool stringToKeyList(const QString &outstr, GpgOp::KeyList *_keylist, QSt
 				keyList += GpgOp::Key();
 
 				QString trust = f[1];
-				if(trust == "f" || trust == "u")
+				if(trust == QLatin1String("f") || trust == QLatin1String("u"))
 					keyList.last().isTrusted = true;
 			}
 
-			int key_type = f[3].toInt();
-			QString caps = f[11];
+			const int key_type = f[3].toInt();
+			const QString caps = f[11];
 
 			GpgOp::KeyItem item;
 			item.bits = f[2].toInt();
@@ -175,23 +175,23 @@ static bool stringToKeyList(const QString &outstr, GpgOp::KeyList *_keylist, QSt
 			item.id = f[4];
 			item.creationDate = getTimestamp(f[5]);
 			item.expirationDate = getTimestamp(f[6]);
-			if(caps.contains('e'))
+			if(caps.contains(QLatin1Char('e')))
 				item.caps |= GpgOp::KeyItem::Encrypt;
-			if(caps.contains('s'))
+			if(caps.contains(QLatin1Char('s')))
 				item.caps |= GpgOp::KeyItem::Sign;
-			if(caps.contains('c'))
+			if(caps.contains(QLatin1Char('c')))
 				item.caps |= GpgOp::KeyItem::Certify;
-			if(caps.contains('a'))
+			if(caps.contains(QLatin1Char('a')))
 				item.caps |= GpgOp::KeyItem::Auth;
 
 			keyList.last().keyItems += item;
 		}
-		else if(type == "uid")
+		else if(type == QLatin1String("uid"))
 		{
-			QByteArray uid = getCString(f[9].toUtf8());
+			const QByteArray uid = getCString(f[9].toUtf8());
 			keyList.last().userIds.append(QString::fromUtf8(uid));
 		}
-		else if(type == "fpr")
+		else if(type == QLatin1String("fpr"))
 		{
 			QString s = f[9];
 			keyList.last().keyItems.last().fingerprint = s;
@@ -208,7 +208,7 @@ static bool stringToKeyList(const QString &outstr, GpgOp::KeyList *_keylist, QSt
 
 static bool findKeyringFilename(const QString &outstr, QString *_keyring)
 {
-	QStringList lines = outstr.split('\n');
+	const QStringList lines = outstr.split(QLatin1Char('\n'));
 	if(lines.count() < 1)
 		return false;
 
@@ -224,16 +224,16 @@ GpgAction::GpgAction(QObject *parent)
 {
 	dtextTimer.setSingleShot(true);
 
-	connect(&proc, SIGNAL(error(gpgQCAPlugin::GPGProc::Error)), SLOT(proc_error(gpgQCAPlugin::GPGProc::Error)));
-	connect(&proc, SIGNAL(finished(int)), SLOT(proc_finished(int)));
-	connect(&proc, SIGNAL(readyReadStdout()), SLOT(proc_readyReadStdout()));
-	connect(&proc, SIGNAL(readyReadStderr()), SLOT(proc_readyReadStderr()));
-	connect(&proc, SIGNAL(readyReadStatusLines()), SLOT(proc_readyReadStatusLines()));
-	connect(&proc, SIGNAL(bytesWrittenStdin(int)), SLOT(proc_bytesWrittenStdin(int)));
-	connect(&proc, SIGNAL(bytesWrittenAux(int)), SLOT(proc_bytesWrittenAux(int)));
-	connect(&proc, SIGNAL(bytesWrittenCommand(int)), SLOT(proc_bytesWrittenCommand(int)));
-	connect(&proc, SIGNAL(debug(const QString &)), SLOT(proc_debug(const QString &)));
-	connect(&dtextTimer, SIGNAL(timeout()), SLOT(t_dtext()));
+	connect(&proc, &GPGProc::error, this, &GpgAction::proc_error);
+	connect(&proc, &GPGProc::finished, this, &GpgAction::proc_finished);
+	connect(&proc, &GPGProc::readyReadStdout, this, &GpgAction::proc_readyReadStdout);
+	connect(&proc, &GPGProc::readyReadStderr, this, &GpgAction::proc_readyReadStderr);
+	connect(&proc, &GPGProc::readyReadStatusLines, this, &GpgAction::proc_readyReadStatusLines);
+	connect(&proc, &GPGProc::bytesWrittenStdin, this, &GpgAction::proc_bytesWrittenStdin);
+	connect(&proc, &GPGProc::bytesWrittenAux, this, &GpgAction::proc_bytesWrittenAux);
+	connect(&proc, &GPGProc::bytesWrittenCommand, this, &GpgAction::proc_bytesWrittenCommand);
+	connect(&proc, &GPGProc::debug, this, &GpgAction::proc_debug);
+	connect(&dtextTimer, &QCA::SafeTimer::timeout, this, &GpgAction::t_dtext);
 
 	reset();
 }
@@ -276,20 +276,20 @@ void GpgAction::start()
 	bool extra = false;
 
 	if(input.opt_ascii)
-		args += "--armor";
+		args += QStringLiteral("--armor");
 
 	if(input.opt_noagent)
-		args += "--no-use-agent";
+		args += QStringLiteral("--no-use-agent");
 
 	if(input.opt_alwaystrust)
-		args += "--always-trust";
+		args += QStringLiteral("--always-trust");
 
 	if(!input.opt_pubfile.isEmpty() && !input.opt_secfile.isEmpty())
 	{
-		args += "--no-default-keyring";
-		args += "--keyring";
+		args += QStringLiteral("--no-default-keyring");
+		args += QStringLiteral("--keyring");
 		args += input.opt_pubfile;
-		args += "--secret-keyring";
+		args += QStringLiteral("--secret-keyring");
 		args += input.opt_secfile;
 	}
 
@@ -297,59 +297,59 @@ void GpgAction::start()
 	{
 	case GpgOp::Check:
 	{
-		args += "--version";
+		args += QStringLiteral("--version");
 		readText = true;
 		break;
 	}
 	case GpgOp::SecretKeyringFile:
 	{
 #ifndef Q_OS_WIN
-		args += "--display-charset=utf-8";
+		args += QStringLiteral("--display-charset=utf-8");
 #endif
-		args += "--list-secret-keys";
+		args += QStringLiteral("--list-secret-keys");
 		readText = true;
 		break;
 	}
 	case GpgOp::PublicKeyringFile:
 	{
 #ifndef Q_OS_WIN
-		args += "--display-charset=utf-8";
+		args += QStringLiteral("--display-charset=utf-8");
 #endif
-		args += "--list-public-keys";
+		args += QStringLiteral("--list-public-keys");
 		readText = true;
 		break;
 	}
 	case GpgOp::SecretKeys:
 	{
-		args += "--fixed-list-mode";
-		args += "--with-colons";
-		args += "--with-fingerprint";
-		args += "--with-fingerprint";
-		args += "--list-secret-keys";
+		args += QStringLiteral("--fixed-list-mode");
+		args += QStringLiteral("--with-colons");
+		args += QStringLiteral("--with-fingerprint");
+		args += QStringLiteral("--with-fingerprint");
+		args += QStringLiteral("--list-secret-keys");
 		utf8Output = true;
 		readText = true;
 		break;
 	}
 	case GpgOp::PublicKeys:
 	{
-		args += "--fixed-list-mode";
-		args += "--with-colons";
-		args += "--with-fingerprint";
-		args += "--with-fingerprint";
-		args += "--list-public-keys";
+		args += QStringLiteral("--fixed-list-mode");
+		args += QStringLiteral("--with-colons");
+		args += QStringLiteral("--with-fingerprint");
+		args += QStringLiteral("--with-fingerprint");
+		args += QStringLiteral("--list-public-keys");
 		utf8Output = true;
 		readText = true;
 		break;
 	}
 	case GpgOp::Encrypt:
 	{
-		args += "--encrypt";
+		args += QStringLiteral("--encrypt");
 
 		// recipients
 		for(QStringList::ConstIterator it = input.recip_ids.constBegin(); it != input.recip_ids.constEnd(); ++it)
 		{
-			args += "--recipient";
-			args += QString("0x") + *it;
+			args += QStringLiteral("--recipient");
+			args += QStringLiteral("0x") + *it;
 		}
 		extra = true;
 		collectOutput = false;
@@ -360,7 +360,7 @@ void GpgAction::start()
 	}
 	case GpgOp::Decrypt:
 	{
-		args += "--decrypt";
+		args += QStringLiteral("--decrypt");
 		extra = true;
 		collectOutput = false;
 		allowInput = true;
@@ -370,9 +370,9 @@ void GpgAction::start()
 	}
 	case GpgOp::Sign:
 	{
-		args += "--default-key";
-		args += QString("0x") + input.signer_id;
-		args += "--sign";
+		args += QStringLiteral("--default-key");
+		args += QStringLiteral("0x") + input.signer_id;
+		args += QStringLiteral("--sign");
 		extra = true;
 		collectOutput = false;
 		allowInput = true;
@@ -383,16 +383,16 @@ void GpgAction::start()
 	}
 	case GpgOp::SignAndEncrypt:
 	{
-		args += "--default-key";
-		args += QString("0x") + input.signer_id;
-		args += "--sign";
-		args += "--encrypt";
+		args += QStringLiteral("--default-key");
+		args += QStringLiteral("0x") + input.signer_id;
+		args += QStringLiteral("--sign");
+		args += QStringLiteral("--encrypt");
 
 		// recipients
 		for(QStringList::ConstIterator it = input.recip_ids.constBegin(); it != input.recip_ids.constEnd(); ++it)
 		{
-			args += "--recipient";
-			args += QString("0x") + *it;
+			args += QStringLiteral("--recipient");
+			args += QStringLiteral("0x") + *it;
 		}
 		extra = true;
 		collectOutput = false;
@@ -404,9 +404,9 @@ void GpgAction::start()
 	}
 	case GpgOp::SignClearsign:
 	{
-		args += "--default-key";
-		args += QString("0x") + input.signer_id;
-		args += "--clearsign";
+		args += QStringLiteral("--default-key");
+		args += QStringLiteral("0x") + input.signer_id;
+		args += QStringLiteral("--clearsign");
 		extra = true;
 		collectOutput = false;
 		allowInput = true;
@@ -417,9 +417,9 @@ void GpgAction::start()
 	}
 	case GpgOp::SignDetached:
 	{
-		args += "--default-key";
-		args += QString("0x") + input.signer_id;
-		args += "--detach-sign";
+		args += QStringLiteral("--default-key");
+		args += QStringLiteral("0x") + input.signer_id;
+		args += QStringLiteral("--detach-sign");
 		extra = true;
 		collectOutput = false;
 		allowInput = true;
@@ -430,8 +430,8 @@ void GpgAction::start()
 	}
 	case GpgOp::Verify:
 	{
-		args += "--verify";
-		args += "-"; //krazy:exclude=doublequote_chars
+		args += QStringLiteral("--verify");
+		args += QStringLiteral("-"); //krazy:exclude=doublequote_chars
 		extra = true;
 		allowInput = true;
 		if(input.opt_ascii)
@@ -440,9 +440,9 @@ void GpgAction::start()
 	}
 	case GpgOp::VerifyDetached:
 	{
-		args += "--verify";
-		args += "-"; //krazy:exclude=doublequote_chars
-		args += "-&?";
+		args += QStringLiteral("--verify");
+		args += QStringLiteral("-"); //krazy:exclude=doublequote_chars
+		args += QStringLiteral("-&?");
 		extra = true;
 		allowInput = true;
 		useAux = true;
@@ -450,7 +450,7 @@ void GpgAction::start()
 	}
 	case GpgOp::Import:
 	{
-		args += "--import";
+		args += QStringLiteral("--import");
 		readText = true;
 		if(input.opt_ascii)
 			writeText = true;
@@ -458,8 +458,8 @@ void GpgAction::start()
 	}
 	case GpgOp::Export:
 	{
-		args += "--export";
-		args += QString("0x") + input.export_key_id;
+		args += QStringLiteral("--export");
+		args += QStringLiteral("0x") + input.export_key_id;
 		collectOutput = false;
 		if(input.opt_ascii)
 			readText = true;
@@ -467,9 +467,9 @@ void GpgAction::start()
 	}
 	case GpgOp::DeleteKey:
 	{
-		args += "--batch";
-		args += "--delete-key";
-		args += QString("0x") + input.delete_key_fingerprint;
+		args += QStringLiteral("--batch");
+		args += QStringLiteral("--delete-key");
+		args += QStringLiteral("0x") + input.delete_key_fingerprint;
 		break;
 	}
 	}
@@ -605,8 +605,7 @@ void GpgAction::submitCommand(const QByteArray &a)
 // since str is taken as a value, it is ok to use the same variable for 'rest'
 QString GpgAction::nextArg(QString str, QString *rest)
 {
-	QString out;
-	int n = str.indexOf(' ');
+	int n = str.indexOf(QLatin1Char(' '));
 	if(n == -1)
 	{
 		if(rest)
@@ -623,7 +622,7 @@ QString GpgAction::nextArg(QString str, QString *rest)
 
 void GpgAction::processStatusLine(const QString &line)
 {
-	appendDiagnosticText("{" + line + "}");
+	appendDiagnosticText(QStringLiteral("{") + line + QStringLiteral("}"));
 	ensureDTextEmit();
 
 	if(!proc.isActive())
@@ -632,32 +631,32 @@ void GpgAction::processStatusLine(const QString &line)
 	QString s, rest;
 	s = nextArg(line, &rest);
 
-	if(s == "NODATA")
+	if(s == QLatin1String("NODATA"))
 	{
 		// only set this if it'll make it better
 		if(curError == GpgOp::ErrorUnknown)
 			curError = GpgOp::ErrorFormat;
 	}
-	else if(s == "UNEXPECTED")
+	else if(s == QLatin1String("UNEXPECTED"))
 	{
 		if(curError == GpgOp::ErrorUnknown)
 			curError = GpgOp::ErrorFormat;
 	}
-	else if(s == "EXPKEYSIG")
+	else if(s == QLatin1String("EXPKEYSIG"))
 	{
 		curError = GpgOp::ErrorSignerExpired;
 	}
-	else if(s == "REVKEYSIG")
+	else if(s == QLatin1String("REVKEYSIG"))
 	{
 		curError = GpgOp::ErrorSignerRevoked;
 	}
-	else if(s == "EXPSIG")
+	else if(s == QLatin1String("EXPSIG"))
 	{
 		curError = GpgOp::ErrorSignatureExpired;
 	}
-	else if(s == "INV_RECP")
+	else if(s == QLatin1String("INV_RECP"))
 	{
-		int r = nextArg(rest).toInt();
+		const int r = nextArg(rest).toInt();
 
 		if(curError == GpgOp::ErrorUnknown)
 		{
@@ -676,14 +675,14 @@ void GpgAction::processStatusLine(const QString &line)
 				curError = GpgOp::ErrorEncryptInvalid;
 		}
 	}
-	else if(s == "NO_SECKEY")
+	else if(s == QLatin1String("NO_SECKEY"))
 	{
 		output.encryptedToId = nextArg(rest);
 
 		if(curError == GpgOp::ErrorUnknown)
 			curError = GpgOp::ErrorDecryptNoKey;
 	}
-	else if(s == "DECRYPTION_OKAY")
+	else if(s == QLatin1String("DECRYPTION_OKAY"))
 	{
 		decryptGood = true;
 
@@ -691,18 +690,18 @@ void GpgAction::processStatusLine(const QString &line)
 		if(curError == GpgOp::ErrorDecryptNoKey)
 			curError = GpgOp::ErrorUnknown;
 	}
-	else if(s == "SIG_CREATED")
+	else if(s == QLatin1String("SIG_CREATED"))
 	{
 		signGood = true;
 	}
-	else if(s == "USERID_HINT")
+	else if(s == QLatin1String("USERID_HINT"))
 	{
 		passphraseKeyId = nextArg(rest);
 	}
-	else if(s == "GET_HIDDEN")
+	else if(s == QLatin1String("GET_HIDDEN"))
 	{
 		QString arg = nextArg(rest);
-		if(arg == "passphrase.enter" || arg == "passphrase.pin.ask")
+		if(arg == QLatin1String("passphrase.enter") || arg == QLatin1String("passphrase.pin.ask"))
 		{
 			need_submitPassphrase = true;
 
@@ -710,53 +709,53 @@ void GpgAction::processStatusLine(const QString &line)
 			QMetaObject::invokeMethod(this, "needPassphrase", Qt::QueuedConnection, Q_ARG(QString, passphraseKeyId));
 		}
 	}
-	else if(s == "GET_LINE")
+	else if(s == QLatin1String("GET_LINE"))
 	{
 		QString arg = nextArg(rest);
-		if(arg == "cardctrl.insert_card.okay")
+		if(arg == QLatin1String("cardctrl.insert_card.okay"))
 		{
 			need_cardOkay = true;
 
 			QMetaObject::invokeMethod(this, "needCard", Qt::QueuedConnection);
 		}
 	}
-	else if(s == "GET_BOOL")
+	else if(s == QLatin1String("GET_BOOL"))
 	{
 		QString arg = nextArg(rest);
-		if(arg == "untrusted_key.override")
+		if(arg == QLatin1String("untrusted_key.override"))
 			submitCommand("no\n");
 	}
-	else if(s == "GOOD_PASSPHRASE")
+	else if(s == QLatin1String("GOOD_PASSPHRASE"))
 	{
 		badPassphrase = false;
 	}
-	else if(s == "BAD_PASSPHRASE")
+	else if(s == QLatin1String("BAD_PASSPHRASE"))
 	{
 		badPassphrase = true;
 	}
-	else if(s == "GOODSIG")
+	else if(s == QLatin1String("GOODSIG"))
 	{
 		output.wasSigned = true;
 		output.signerId = nextArg(rest);
 		output.verifyResult = GpgOp::VerifyGood;
 	}
-	else if(s == "BADSIG")
+	else if(s == QLatin1String("BADSIG"))
 	{
 		output.wasSigned = true;
 		output.signerId = nextArg(rest);
 		output.verifyResult = GpgOp::VerifyBad;
 	}
-	else if(s == "ERRSIG")
+	else if(s == QLatin1String("ERRSIG"))
 	{
 		output.wasSigned = true;
-		QStringList list = rest.split(' ', QString::SkipEmptyParts);
+		const QStringList list = rest.split(QLatin1Char(' '), QString::SkipEmptyParts);
 		output.signerId = list[0];
 		output.timestamp = getTimestamp(list[4]);
 		output.verifyResult = GpgOp::VerifyNoKey;
 	}
-	else if(s == "VALIDSIG")
+	else if(s == QLatin1String("VALIDSIG"))
 	{
-		QStringList list = rest.split(' ', QString::SkipEmptyParts);
+		const QStringList list = rest.split(QLatin1Char(' '), QString::SkipEmptyParts);
 		output.timestamp = getTimestamp(list[2]);
 	}
 }
@@ -788,8 +787,8 @@ void GpgAction::processResult(int code)
 #endif
 
 	if(collectOutput)
-		appendDiagnosticText(QString("stdout: [%1]").arg(outstr));
-	appendDiagnosticText(QString("stderr: [%1]").arg(errstr));
+		appendDiagnosticText(QStringLiteral("stdout: [%1]").arg(outstr));
+	appendDiagnosticText(QStringLiteral("stderr: [%1]").arg(errstr));
 	ensureDTextEmit();
 
 	if(badPassphrase)
@@ -804,13 +803,13 @@ void GpgAction::processResult(int code)
 	{
 		if(input.op == GpgOp::Check)
 		{
-			QStringList strList = outstr.split("\n");
+			const QStringList strList = outstr.split(QStringLiteral("\n"));
 			foreach (const QString &str, strList)
 			{
-				if (!str.startsWith("Home: "))
+				if (!str.startsWith(QLatin1String("Home: ")))
 					continue;
 
-				output.homeDir = str.section(' ', 1);
+				output.homeDir = str.section(QLatin1Char(' '), 1);
 				break;
 			}
 			output.success = true;
@@ -869,13 +868,13 @@ void GpgAction::proc_error(gpgQCAPlugin::GPGProc::Error e)
 {
 	QString str;
 	if(e == GPGProc::FailedToStart)
-		str = "FailedToStart";
+		str = QStringLiteral("FailedToStart");
 	else if(e == GPGProc::UnexpectedExit)
-		str = "UnexpectedExit";
+		str = QStringLiteral("UnexpectedExit");
 	else if(e == GPGProc::ErrorWrite)
-		str = "ErrorWrite";
+		str = QStringLiteral("ErrorWrite");
 
-	appendDiagnosticText(QString("GPG Process Error: %1").arg(str));
+	appendDiagnosticText(QStringLiteral("GPG Process Error: %1").arg(str));
 	ensureDTextEmit();
 
 	output.errorCode = GpgOp::ErrorProcess;
@@ -884,7 +883,7 @@ void GpgAction::proc_error(gpgQCAPlugin::GPGProc::Error e)
 
 void GpgAction::proc_finished(int exitCode)
 {
-	appendDiagnosticText(QString("GPG Process Finished: exitStatus=%1").arg(exitCode));
+	appendDiagnosticText(QStringLiteral("GPG Process Finished: exitStatus=%1").arg(exitCode));
 	ensureDTextEmit();
 
 	processResult(exitCode);
@@ -910,7 +909,7 @@ void GpgAction::proc_readyReadStderr()
 
 void GpgAction::proc_readyReadStatusLines()
 {
-	QStringList lines = proc.readStatusLines();
+	const QStringList lines = proc.readStatusLines();
 	for(int n = 0; n < lines.count(); ++n)
 		processStatusLine(lines[n]);
 }
@@ -940,7 +939,7 @@ void GpgAction::proc_bytesWrittenCommand(int)
 
 void GpgAction::proc_debug(const QString &str)
 {
-	appendDiagnosticText("GPGProc: " + str);
+	appendDiagnosticText(QStringLiteral("GPGProc: ") + str);
 	ensureDTextEmit();
 }
 

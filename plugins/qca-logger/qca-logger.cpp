@@ -23,7 +23,7 @@
 #include <QTextStream>
 #include <QFile>
 
-#include <stdlib.h>
+#include <cstdlib>
 
 using namespace QCA;
 
@@ -31,23 +31,24 @@ namespace loggerQCAPlugin {
 
 class StreamLogger : public QCA::AbstractLogDevice
 {
+    Q_OBJECT
 public:
-	StreamLogger(QTextStream &stream) : QCA::AbstractLogDevice( "Stream logger" ), _stream(stream)
+	StreamLogger(QTextStream &stream) : QCA::AbstractLogDevice( QStringLiteral("Stream logger") ), _stream(stream)
 	{
 		QCA::logger()->registerLogDevice (this);
 	}
 
-	~StreamLogger()
+	~StreamLogger() override
 	{
 		QCA::logger()->unregisterLogDevice (name ());
 	}
 
-	void logTextMessage( const QString &message, enum QCA::Logger::Severity severity )
+	void logTextMessage( const QString &message, enum QCA::Logger::Severity severity ) override
 	{
 		_stream << now () << " " << severityName (severity) << " " << message << endl;
 	}
 
-	void logBinaryMessage( const QByteArray &blob, enum QCA::Logger::Severity severity )
+	void logBinaryMessage( const QByteArray &blob, enum QCA::Logger::Severity severity ) override
 	{
 		Q_UNUSED(blob);
 		_stream << now () << " " << severityName (severity) << " " << "Binary blob not implemented yet" << endl;
@@ -65,7 +66,7 @@ private:
 	}
 
 	inline QString now() {
-		static QString format = "yyyy-MM-dd hh:mm:ss";
+		static const QString format = QStringLiteral("yyyy-MM-dd hh:mm:ss");
 		return QDateTime::currentDateTime ().toString (format);
 	}
 
@@ -102,84 +103,77 @@ private:
 public:
 	loggerProvider () {
 		_externalConfig = false;
-		_streamLogger = NULL;
+		_streamLogger = nullptr;
 
-		QByteArray level = qgetenv ("QCALOGGER_LEVEL");
-		QByteArray file = qgetenv ("QCALOGGER_FILE");
+		const QByteArray level = qgetenv ("QCALOGGER_LEVEL");
+		const QByteArray file = qgetenv ("QCALOGGER_FILE");
 
 		if (!level.isEmpty ()) {
 			printf ("XXXX %s %s\n", level.data (), file.data ());
 			_externalConfig = true;
 			createLogger (
-				atoi (level),
+				atoi (level.constData()),
 				file.isEmpty () ? QString() : QString::fromUtf8 (file)
 			);
 		}
 	}
 
-	~loggerProvider () {
+	~loggerProvider () override {
 		delete _streamLogger;
-		_streamLogger = NULL;
+		_streamLogger = nullptr;
 	}
 
 public:
-	virtual
 	int
-	qcaVersion() const {
+	qcaVersion() const override {
 		return QCA_VERSION;
 	}
 
-	virtual
 	void
-	init () {}
+	init () override {}
 
-	virtual
 	QString
-	name () const {
-		return "qca-logger";
+	name () const override {
+		return QStringLiteral("qca-logger");
 	}
 
-	virtual
 	QStringList
-	features () const {
+	features () const override {
 		QStringList list;
-		list += "log";
+		list += QStringLiteral("log");
 		return list;
 	}
 
-	virtual
 	Context *
 	createContext (
 		const QString &type
-	) {
+	) override {
 		Q_UNUSED(type);
-		return NULL;
+		return nullptr;
 	}
 
-	virtual
 	QVariantMap
-	defaultConfig () const {
+	defaultConfig () const override {
 		QVariantMap mytemplate;
 
-		mytemplate["formtype"] = "http://affinix.com/qca/forms/qca-logger#1.0";
-		mytemplate["enabled"] = false;
-		mytemplate["file"] = "";
-		mytemplate["level"] = (int)Logger::Quiet;
+		mytemplate[QStringLiteral("formtype")] = QStringLiteral("http://affinix.com/qca/forms/qca-logger#1.0");
+		mytemplate[QStringLiteral("enabled")] = false;
+		mytemplate[QStringLiteral("file")] = QLatin1String("");
+		mytemplate[QStringLiteral("level")] = (int)Logger::Quiet;
 
 		return mytemplate;
 	}
 
-	virtual
 	void
-	configChanged (const QVariantMap &config) {
+	configChanged (const QVariantMap &config) override {
 		if (!_externalConfig) {
 			delete _streamLogger;
-			_streamLogger = NULL;
+			_streamLogger = nullptr;
 
-			if (config["enabled"].toBool ()) {
+			if (config[QStringLiteral("enabled")].toBool ()) {
 				createLogger (
-					config["level"].toInt (),
-					config["file"].toString ()
+					config[QStringLiteral("level")].toInt (),
+					config[QStringLiteral("file")].toString ()
 				);
 			}
 		}
@@ -211,17 +205,12 @@ private:
 class loggerPlugin : public QObject, public QCAPlugin
 {
 	Q_OBJECT
-#if QT_VERSION >= 0x050000
 	Q_PLUGIN_METADATA(IID "com.affinix.qca.Plugin/1.0")
-#endif
 	Q_INTERFACES(QCAPlugin)
 
 public:
-	virtual Provider *createProvider() { return new loggerProvider; }
+	Provider *createProvider() override { return new loggerProvider; }
 };
 
 #include "qca-logger.moc"
 
-#if QT_VERSION < 0x050000
-Q_EXPORT_PLUGIN2(qca_logger, loggerPlugin)
-#endif

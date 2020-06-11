@@ -31,7 +31,7 @@ namespace gpgQCAPlugin {
 void releaseAndDeleteLater(QObject *owner, QObject *obj)
 {
 	obj->disconnect(owner);
-	obj->setParent(0);
+	obj->setParent(nullptr);
 	obj->deleteLater();
 }
 
@@ -47,21 +47,19 @@ GPGProc::Private::Private(GPGProc *_q)
 {
 	qRegisterMetaType<gpgQCAPlugin::GPGProc::Error>("gpgQCAPlugin::GPGProc::Error");
 
-	proc = 0;
-#ifdef QPROC_SIGNAL_RELAY
-	proc_relay = 0;
-#endif
+	proc = nullptr;
+	proc_relay = nullptr;
 	startTrigger.setSingleShot(true);
 	doneTrigger.setSingleShot(true);
 
-	connect(&pipeAux.writeEnd(), SIGNAL(bytesWritten(int)), SLOT(aux_written(int)));
-	connect(&pipeAux.writeEnd(), SIGNAL(error(QCA::QPipeEnd::Error)), SLOT(aux_error(QCA::QPipeEnd::Error)));
-	connect(&pipeCommand.writeEnd(), SIGNAL(bytesWritten(int)), SLOT(command_written(int)));
-	connect(&pipeCommand.writeEnd(), SIGNAL(error(QCA::QPipeEnd::Error)), SLOT(command_error(QCA::QPipeEnd::Error)));
-	connect(&pipeStatus.readEnd(), SIGNAL(readyRead()), SLOT(status_read()));
-	connect(&pipeStatus.readEnd(), SIGNAL(error(QCA::QPipeEnd::Error)), SLOT(status_error(QCA::QPipeEnd::Error)));
-	connect(&startTrigger, SIGNAL(timeout()), SLOT(doStart()));
-	connect(&doneTrigger, SIGNAL(timeout()), SLOT(doTryDone()));
+	connect(&pipeAux.writeEnd(), &QCA::QPipeEnd::bytesWritten, this, &GPGProc::Private::aux_written);
+	connect(&pipeAux.writeEnd(), &QCA::QPipeEnd::error, this, &GPGProc::Private::aux_error);
+	connect(&pipeCommand.writeEnd(), &QCA::QPipeEnd::bytesWritten, this, &GPGProc::Private::command_written);
+	connect(&pipeCommand.writeEnd(), &QCA::QPipeEnd::error, this, &GPGProc::Private::command_error);
+	connect(&pipeStatus.readEnd(), &QCA::QPipeEnd::readyRead, this, &GPGProc::Private::status_read);
+	connect(&pipeStatus.readEnd(), &QCA::QPipeEnd::error, this, &GPGProc::Private::status_error);
+	connect(&startTrigger, &QCA::SafeTimer::timeout, this, &GPGProc::Private::doStart);
+	connect(&doneTrigger, &QCA::SafeTimer::timeout, this, &GPGProc::Private::doTryDone);
 
 	reset(ResetSessionAndData);
 }
@@ -104,15 +102,11 @@ void GPGProc::Private::reset(ResetMode mode)
 				proc->terminate();
 		}
 
-		proc->setParent(0);
-#ifdef QPROC_SIGNAL_RELAY
+		proc->setParent(nullptr);
 		releaseAndDeleteLater(this, proc_relay);
-		proc_relay = 0;
+		proc_relay = nullptr;
 		delete proc; // should be safe to do thanks to relay
-#else
-		proc->deleteLater();
-#endif
-		proc = 0;
+		proc = nullptr;
 	}
 
 #ifdef QT_PIPE_HACK
@@ -149,7 +143,7 @@ bool GPGProc::Private::setupPipes(bool makeAux)
 	if(makeAux && !pipeAux.create())
 	{
 		closePipes();
-		emit q->debug("Error creating pipeAux");
+		emit q->debug(QStringLiteral("Error creating pipeAux"));
 		return false;
 	}
 
@@ -160,14 +154,14 @@ bool GPGProc::Private::setupPipes(bool makeAux)
 #endif
 		{
 			closePipes();
-			emit q->debug("Error creating pipeCommand");
+			emit q->debug(QStringLiteral("Error creating pipeCommand"));
 			return false;
 		}
 
 	if(!pipeStatus.create())
 	{
 		closePipes();
-		emit q->debug("Error creating pipeStatus");
+		emit q->debug(QStringLiteral("Error creating pipeStatus"));
 		return false;
 	}
 
@@ -177,30 +171,32 @@ bool GPGProc::Private::setupPipes(bool makeAux)
 void GPGProc::Private::setupArguments()
 {
 	QStringList fullargs;
-	fullargs += "--no-tty";
+	fullargs += QStringLiteral("--no-tty");
+	fullargs += QStringLiteral("--pinentry-mode");
+	fullargs += QStringLiteral("loopback");
 
 	if(mode == ExtendedMode)
 	{
-		fullargs += "--enable-special-filenames";
+		fullargs += QStringLiteral("--enable-special-filenames");
 
-		fullargs += "--status-fd";
+		fullargs += QStringLiteral("--status-fd");
 		fullargs += QString::number(pipeStatus.writeEnd().idAsInt());
 
-		fullargs += "--command-fd";
+		fullargs += QStringLiteral("--command-fd");
 		fullargs += QString::number(pipeCommand.readEnd().idAsInt());
 	}
 
 	for(int n = 0; n < args.count(); ++n)
 	{
 		QString a = args[n];
-		if(mode == ExtendedMode && a == "-&?")
-			fullargs += QString("-&") + QString::number(pipeAux.readEnd().idAsInt());
+		if(mode == ExtendedMode && a == QLatin1String("-&?"))
+			fullargs += QStringLiteral("-&") + QString::number(pipeAux.readEnd().idAsInt());
 		else
 			fullargs += a;
 	}
 
-	QString fullcmd = fullargs.join(" ");
-	emit q->debug(QString("Running: [") + bin + ' ' + fullcmd + ']');
+	QString fullcmd = fullargs.join(QStringLiteral(" "));
+	emit q->debug(QStringLiteral("Running: [") + bin + QLatin1Char(' ') + fullcmd + QLatin1Char(']'));
 
 	args = fullargs;
 }
@@ -234,7 +230,7 @@ void GPGProc::Private::aux_written(int x)
 
 void GPGProc::Private::aux_error(QCA::QPipeEnd::Error)
 {
-	emit q->debug("Aux: Pipe error");
+	emit q->debug(QStringLiteral("Aux: Pipe error"));
 	reset(ResetSession);
 	emit q->error(GPGProc::ErrorWrite);
 }
@@ -246,7 +242,7 @@ void GPGProc::Private::command_written(int x)
 
 void GPGProc::Private::command_error(QCA::QPipeEnd::Error)
 {
-	emit q->debug("Command: Pipe error");
+	emit q->debug(QStringLiteral("Command: Pipe error"));
 	reset(ResetSession);
 	emit q->error(GPGProc::ErrorWrite);
 }
@@ -260,9 +256,9 @@ void GPGProc::Private::status_read()
 void GPGProc::Private::status_error(QCA::QPipeEnd::Error e)
 {
 	if(e == QPipeEnd::ErrorEOF)
-		emit q->debug("Status: Closed (EOF)");
+		emit q->debug(QStringLiteral("Status: Closed (EOF)"));
 	else
-		emit q->debug("Status: Closed (gone)");
+		emit q->debug(QStringLiteral("Status: Closed (gone)"));
 
 	fin_status = true;
 	doTryDone();
@@ -270,7 +266,7 @@ void GPGProc::Private::status_error(QCA::QPipeEnd::Error e)
 
 void GPGProc::Private::proc_started()
 {
-	emit q->debug("Process started");
+	emit q->debug(QStringLiteral("Process started"));
 
 	// Note: we don't close these here anymore.  instead we
 	//   do it just after calling proc->start().
@@ -330,7 +326,7 @@ void GPGProc::Private::proc_bytesWritten(qint64 lx)
 
 void GPGProc::Private::proc_finished(int x)
 {
-	emit q->debug(QString("Process finished: %1").arg(x));
+	emit q->debug(QStringLiteral("Process finished: %1").arg(x));
 	exitCode = x;
 
 	fin_process = true;
@@ -354,14 +350,14 @@ void GPGProc::Private::proc_finished(int x)
 void GPGProc::Private::proc_error(QProcess::ProcessError x)
 {
 	QMap<int, QString> errmap;
-	errmap[QProcess::FailedToStart] = "FailedToStart";
-	errmap[QProcess::Crashed]       = "Crashed";
-	errmap[QProcess::Timedout]      = "Timedout";
-	errmap[QProcess::WriteError]    = "WriteError";
-	errmap[QProcess::ReadError]     = "ReadError";
-	errmap[QProcess::UnknownError]  = "UnknownError";
+	errmap[QProcess::FailedToStart] = QStringLiteral("FailedToStart");
+	errmap[QProcess::Crashed]       = QStringLiteral("Crashed");
+	errmap[QProcess::Timedout]      = QStringLiteral("Timedout");
+	errmap[QProcess::WriteError]    = QStringLiteral("WriteError");
+	errmap[QProcess::ReadError]     = QStringLiteral("ReadError");
+	errmap[QProcess::UnknownError]  = QStringLiteral("UnknownError");
 
-	emit q->debug(QString("Process error: %1").arg(errmap[x]));
+	emit q->debug(QStringLiteral("Process error: %1").arg(errmap[x]));
 
 	if(x == QProcess::FailedToStart)
 		error = GPGProc::FailedToStart;
@@ -409,7 +405,7 @@ void GPGProc::Private::doTryDone()
 	if(need_status && !fin_status)
 		return;
 
-	emit q->debug("Done");
+	emit q->debug(QStringLiteral("Done"));
 
 	// get leftover data
 	proc->setReadChannel(QProcess::StandardOutput);
@@ -427,7 +423,7 @@ void GPGProc::Private::doTryDone()
 
 bool GPGProc::Private::readAndProcessStatusData()
 {
-	QByteArray buf = pipeStatus.readEnd().read();
+	const QByteArray buf = pipeStatus.readEnd().read();
 	if(buf.isEmpty())
 		return false;
 
@@ -441,7 +437,7 @@ bool GPGProc::Private::processStatusData(const QByteArray &buf)
 
 	// extract all lines
 	QStringList list;
-	while(1)
+	while(true)
 	{
 		int n = statusBuf.indexOf('\n');
 		if(n == -1)
@@ -451,7 +447,7 @@ bool GPGProc::Private::processStatusData(const QByteArray &buf)
 		++n;
 		char *p = (char *)statusBuf.data();
 		QByteArray cs(p, n);
-		int newsize = statusBuf.size() - n;
+		const int newsize = statusBuf.size() - n;
 		memmove(p, p + n, newsize);
 		statusBuf.resize(newsize);
 
@@ -460,7 +456,7 @@ bool GPGProc::Private::processStatusData(const QByteArray &buf)
 		str.truncate(str.length() - 1);
 
 		// ensure it has a proper header
-		if(str.left(9) != "[GNUPG:] ")
+		if(str.left(9) != QLatin1String("[GNUPG:] "))
 			continue;
 
 		// take it off
@@ -505,7 +501,7 @@ void GPGProc::start(const QString &bin, const QStringList &args, Mode mode)
 
 	if(mode == ExtendedMode)
 	{
-		if(!d->setupPipes(args.contains("-&?")))
+		if(!d->setupPipes(args.contains(QStringLiteral("-&?"))))
 		{
 			d->error = FailedToStart;
 
@@ -516,7 +512,7 @@ void GPGProc::start(const QString &bin, const QStringList &args, Mode mode)
 
 		d->need_status = true;
 
-		emit debug("Pipe setup complete");
+		emit debug(QStringLiteral("Pipe setup complete"));
 	}
 
 	d->proc = new SProcess(d);
@@ -540,22 +536,13 @@ void GPGProc::start(const QString &bin, const QStringList &args, Mode mode)
 	if(d->pipeStatus.readEnd().isValid())
 		d->pipeStatus.readEnd().enable();
 
-#ifdef QPROC_SIGNAL_RELAY
 	d->proc_relay = new QProcessSignalRelay(d->proc, d);
-	connect(d->proc_relay, SIGNAL(started()), d, SLOT(proc_started()));
-	connect(d->proc_relay, SIGNAL(readyReadStandardOutput()), d, SLOT(proc_readyReadStandardOutput()));
-	connect(d->proc_relay, SIGNAL(readyReadStandardError()), d, SLOT(proc_readyReadStandardError()));
-	connect(d->proc_relay, SIGNAL(bytesWritten(qint64)), d, SLOT(proc_bytesWritten(qint64)));
-	connect(d->proc_relay, SIGNAL(finished(int)), d, SLOT(proc_finished(int)));
-	connect(d->proc_relay, SIGNAL(error(QProcess::ProcessError)), d, SLOT(proc_error(QProcess::ProcessError)));
-#else
-	connect(d->proc, SIGNAL(started()), d, SLOT(proc_started()));
-	connect(d->proc, SIGNAL(readyReadStandardOutput()), d, SLOT(proc_readyReadStandardOutput()));
-	connect(d->proc, SIGNAL(readyReadStandardError()), d, SLOT(proc_readyReadStandardError()));
-	connect(d->proc, SIGNAL(bytesWritten(qint64)), d, SLOT(proc_bytesWritten(qint64)));
-	connect(d->proc, SIGNAL(finished(int)), d, SLOT(proc_finished(int)));
-	connect(d->proc, SIGNAL(error(QProcess::ProcessError)), d, SLOT(proc_error(QProcess::ProcessError)));
-#endif
+	connect(d->proc_relay, &QProcessSignalRelay::started, d, &GPGProc::Private::proc_started);
+	connect(d->proc_relay, &QProcessSignalRelay::readyReadStandardOutput, d, &GPGProc::Private::proc_readyReadStandardOutput);
+	connect(d->proc_relay, &QProcessSignalRelay::readyReadStandardError, d, &GPGProc::Private::proc_readyReadStandardError);
+	connect(d->proc_relay, &QProcessSignalRelay::bytesWritten, d, &GPGProc::Private::proc_bytesWritten);
+	connect(d->proc_relay, &QProcessSignalRelay::finished, d, &GPGProc::Private::proc_finished);
+	connect(d->proc_relay, &QProcessSignalRelay::error, d, &GPGProc::Private::proc_error);
 
 	d->bin = bin;
 	d->args = args;
@@ -572,7 +559,7 @@ QByteArray GPGProc::readStdout()
 	}
 	else
 	{
-		QByteArray a = d->leftover_stdout;
+		const QByteArray a = d->leftover_stdout;
 		d->leftover_stdout.clear();
 		return a;
 	}
@@ -587,7 +574,7 @@ QByteArray GPGProc::readStderr()
 	}
 	else
 	{
-		QByteArray a = d->leftover_stderr;
+		const QByteArray a = d->leftover_stderr;
 		d->leftover_stderr.clear();
 		return a;
 	}
@@ -595,7 +582,7 @@ QByteArray GPGProc::readStderr()
 
 QStringList GPGProc::readStatusLines()
 {
-	QStringList out = d->statusLines;
+	const QStringList out = d->statusLines;
 	d->statusLines.clear();
 	return out;
 }

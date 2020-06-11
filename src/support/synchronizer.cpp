@@ -23,10 +23,10 @@
 
 #include <QAbstractEventDispatcher>
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QEvent>
 #include <QMutex>
 #include <QPair>
-#include <QTime>
 #include <QWaitCondition>
 
 //#define TIMERFIXER_DEBUG
@@ -48,7 +48,7 @@ public:
 	{
 		int id;
 		int interval;
-		QTime time;
+		QElapsedTimer time;
 		bool fixInterval;
 
 		TimerInfo() : fixInterval(false) {}
@@ -66,9 +66,9 @@ public:
 		return obj->findChild<TimerFixer *>() ? true : false;
 	}
 
-	TimerFixer(QObject *_target, TimerFixer *_fp = 0) : QObject(_target)
+	TimerFixer(QObject *_target, TimerFixer *_fp = nullptr) : QObject(_target)
 	{
-		ed = 0;
+		ed = nullptr;
 
 		target = _target;
 		fixerParent = _fp;
@@ -81,12 +81,12 @@ public:
 		edlink();
 		target->installEventFilter(this);
 
-		QObjectList list = target->children();
+		const QObjectList list = target->children();
 		for(int n = 0; n < list.count(); ++n)
 			hook(list[n]);
 	}
 
-	~TimerFixer()
+	~TimerFixer() override
 	{
 		if(fixerParent)
 			fixerParent->fixerChildren.removeAll(this);
@@ -105,7 +105,7 @@ public:
 #endif
 	}
 
-	virtual bool event(QEvent *e)
+	bool event(QEvent *e) override
 	{
 		switch(e->type())
 		{
@@ -121,7 +121,7 @@ public:
 		return QObject::event(e);
 	}
 
-	virtual bool eventFilter(QObject *, QEvent *e)
+	bool eventFilter(QObject *, QEvent *e) override
 	{
 		switch(e->type())
 		{
@@ -146,12 +146,12 @@ public:
 		return false;
 	}
 
-private slots:
+private Q_SLOTS:
 	void edlink()
 	{
 		ed = QAbstractEventDispatcher::instance();
 		//printf("TimerFixer[%p] linking to dispatcher %p\n", this, ed);
-		connect(ed, SIGNAL(aboutToBlock()), SLOT(ed_aboutToBlock()));
+		connect(ed, &QAbstractEventDispatcher::aboutToBlock, this, &TimerFixer::ed_aboutToBlock);
 	}
 
 	void edunlink()
@@ -159,8 +159,8 @@ private slots:
 		//printf("TimerFixer[%p] unlinking from dispatcher %p\n", this, ed);
 		if(ed)
 		{
-			disconnect(ed, SIGNAL(aboutToBlock()), this, SLOT(ed_aboutToBlock()));
-			ed = 0;
+			disconnect(ed, &QAbstractEventDispatcher::aboutToBlock, this, &TimerFixer::ed_aboutToBlock);
+			ed = nullptr;
 		}
 	}
 
@@ -182,14 +182,10 @@ private slots:
 			QThread *objectThread = target->thread();
 			QAbstractEventDispatcher *ed = QAbstractEventDispatcher::instance(objectThread);
 
-			int timeLeft = qMax(info.interval - info.time.elapsed(), 0);
+			const int timeLeft = qMax(info.interval - static_cast<int>(info.time.elapsed()), 0);
 			info.fixInterval = true;
 			ed->unregisterTimer(info.id);
-#if QT_VERSION >= 0x050000
 			info.id = ed->registerTimer(timeLeft, Qt::CoarseTimer, target);
-#else
-			info.id = ed->registerTimer(timeLeft, target);
-#endif
 
 #ifdef TIMERFIXER_DEBUG
 			printf("TimerFixer[%p] adjusting [%d] to %d\n", this, info.id, timeLeft);
@@ -210,7 +206,7 @@ private:
 
 	void unhook(QObject *obj)
 	{
-		TimerFixer *t = 0;
+		TimerFixer *t = nullptr;
 		for(int n = 0; n < fixerChildren.count(); ++n)
 		{
 			if(fixerChildren[n]->target == obj)
@@ -249,11 +245,7 @@ private:
 #endif
 			info.fixInterval = false;
 			ed->unregisterTimer(info.id);
-#if QT_VERSION >= 0x050000
 			info.id = ed->registerTimer(info.interval, Qt::CoarseTimer, target);
-#else
-			info.id = ed->registerTimer(info.interval, target);
-#endif
 		}
 
 		info.time.start();
@@ -272,11 +264,7 @@ private:
 			int id = timers[n].id;
 			for(int i = 0; i < edtimers.count(); ++i)
 			{
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 				if(edtimers[i].timerId == id)
-#else
-				if(edtimers[i].first == id)
-#endif
 				{
 					found = true;
 					break;
@@ -296,11 +284,7 @@ private:
 		// added?
 		for(int n = 0; n < edtimers.count(); ++n)
 		{
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 			int id = edtimers[n].timerId;
-#else
-			int id = edtimers[n].first;
-#endif
 			bool found = false;
 			for(int i = 0; i < timers.count(); ++i)
 			{
@@ -315,11 +299,7 @@ private:
 			{
 				TimerInfo info;
 				info.id = id;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 				info.interval = edtimers[n].interval;
-#else
-				info.interval = edtimers[n].second;
-#endif
 				info.time.start();
 				timers += info;
 #ifdef TIMERFIXER_DEBUG
@@ -337,12 +317,12 @@ class SynchronizerAgent : public QObject
 {
 	Q_OBJECT
 public:
-	SynchronizerAgent(QObject *parent = 0) : QObject(parent)
+	SynchronizerAgent(QObject *parent = nullptr) : QObject(parent)
 	{
 		QMetaObject::invokeMethod(this, "started", Qt::QueuedConnection);
 	}
 
-signals:
+Q_SIGNALS:
 	void started();
 };
 
@@ -371,19 +351,19 @@ public:
 		, do_quit(false)
 		, cond_met(false)
 		, obj(_obj)
-		, loop(0)
-		, agent(0)
-		, fixer(0)
+		, loop(nullptr)
+		, agent(nullptr)
+		, fixer(nullptr)
 		, m(QMutex::NonRecursive)
 		, w()
-		, orig_thread(0)
+		, orig_thread(nullptr)
 	{
 		// SafeTimer has own method to fix timers, skip it too
 		if (!qobject_cast<SafeTimer*>(obj))
 			fixer = new TimerFixer(obj);
 	}
 
-	~Private()
+	~Private() override
 	{
 		stop();
 		delete fixer;
@@ -424,9 +404,9 @@ public:
 		// move object to the worker thread
 		cond_met = false;
 		orig_thread = QThread::currentThread();
-		q->setParent(0); // don't follow the object
+		q->setParent(nullptr); // don't follow the object
 		QObject *orig_parent = obj->parent();
-		obj->setParent(0); // unparent the target or the move will fail
+		obj->setParent(nullptr); // unparent the target or the move will fail
 		obj->moveToThread(this);
 
 		// tell the worker thread to start, wait for completion
@@ -461,12 +441,12 @@ public:
 	}
 
 protected:
-	virtual void run()
+	void run() override
 	{
 		m.lock();
 		QEventLoop eventLoop;
 
-		while(1)
+		while(true)
 		{
 			// thread now sleeps, waiting for work
 			w.wakeOne();
@@ -479,28 +459,28 @@ protected:
 
 			loop = &eventLoop;
 			agent = new SynchronizerAgent;
-			connect(agent, SIGNAL(started()), SLOT(agent_started()), Qt::DirectConnection);
+			connect(agent, &SynchronizerAgent::started, this, &Private::agent_started, Qt::DirectConnection);
 
 			// run the event loop
 			eventLoop.exec();
 
 			delete agent;
-			agent = 0;
+			agent = nullptr;
 
 			// eventloop done, flush pending events
 			QCoreApplication::instance()->sendPostedEvents();
-			QCoreApplication::instance()->sendPostedEvents(0, QEvent::DeferredDelete);
+			QCoreApplication::instance()->sendPostedEvents(nullptr, QEvent::DeferredDelete);
 
 			// and move the object back
 			obj->moveToThread(orig_thread);
 
 			m.lock();
-			loop = 0;
+			loop = nullptr;
 			w.wakeOne();
 		}
 	}
 
-private slots:
+private Q_SLOTS:
 	void agent_started()
 	{
 		m.unlock();
