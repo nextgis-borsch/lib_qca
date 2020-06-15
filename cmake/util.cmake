@@ -28,7 +28,7 @@ function(check_version major minor rev)
 
     set(CHECK_FILE ${CMAKE_CURRENT_SOURCE_DIR}/include/QtCrypto/qca_core.h)
     set(MAJOR_VERSION 2)
-    set(MINOR_VERSION 2)
+    set(MINOR_VERSION 3)
     set(REV_VERSION 0)
 
     set(${major} ${MAJOR_VERSION} PARENT_SCOPE)
