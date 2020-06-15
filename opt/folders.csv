@@ -35,7 +35,7 @@ unittest/bigintunittest,unittest/bigintunittest,,"cpp,txt"
 unittest/certunittest,unittest/certunittest,,"cpp,txt"
 unittest/certunittest/certs,unittest/certunittest/certs,,*
 unittest/cipherunittest,unittest/cipherunittest,,"cpp,txt,h"
-unittest/clientplugin,unittest/clientplugin,,"cpp,txt"
+unittest/clientplugin,unittest/clientplugin,,"cpp,txt,h"
 unittest/cms,unittest/cms,,"cpp,txt,pem"
 unittest/dsaunittest,unittest/dsaunittest,,"cpp,txt"
 unittest/filewatchunittest,unittest/filewatchunittest,,"cpp,h,txt"
