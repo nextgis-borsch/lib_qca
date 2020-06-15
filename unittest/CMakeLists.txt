@@ -1,16 +1,10 @@
 ENABLE_TESTING()
+
+find_anyproject(Qt5 REQUIRED COMPONENTS Test)
+
 # QTEST_MAIN is using QApplication when QT_GUI_LIB is defined
 remove_definitions(-DQT_GUI_LIB)
-if(Qt5Core_FOUND)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Core_EXECUTABLE_COMPILE_FLAGS}")
-  find_package(Qt5Transitional REQUIRED Test)
-endif(Qt5Core_FOUND)
-
-if(QT4_FOUND)
-    set(QT_QTCORE_LIBRARY Qt4::QtCore)
-    set(QT_QTTEST_LIBRARY Qt4::QtTest)
-    set(QT_QTNETWORK_LIBRARY Qt4::QtNetwork)
-endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Core_EXECUTABLE_COMPILE_FLAGS}")
 
 add_subdirectory(base64unittest)
 add_subdirectory(bigintunittest)
@@ -27,6 +21,7 @@ add_subdirectory(keybundle)
 add_subdirectory(keygenunittest)
 add_subdirectory(keylengthunittest)
 add_subdirectory(keystore)
+add_subdirectory(logger)
 add_subdirectory(macunittest)
 add_subdirectory(metatype)
 add_subdirectory(pgpunittest)

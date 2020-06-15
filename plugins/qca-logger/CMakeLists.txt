@@ -2,7 +2,6 @@
 
 enable_plugin("logger")
 set(QCA_LOGGER_SOURCES qca-logger.cpp)
-my_automoc( QCA_LOGGER_SOURCES )
 
 add_library(qca-logger ${PLUGIN_TYPE} ${QCA_LOGGER_SOURCES})
 
@@ -22,5 +21,5 @@ if(NOT DEVELOPER_MODE)
           ARCHIVE DESTINATION "${QCA_CRYPTO_INSTALL_DIR}"
           RUNTIME DESTINATION "${QCA_CRYPTO_INSTALL_DIR}")
 
-  install_pdb(qca-logger ${QCA_CRYPTO_INSTALL_DIR})
+  #install_pdb(qca-logger ${QCA_CRYPTO_INSTALL_DIR})
 endif()

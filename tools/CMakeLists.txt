@@ -1,11 +1,3 @@
-if(Qt5Core_FOUND)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Core_EXECUTABLE_COMPILE_FLAGS}")
-endif()
-if(QT4_FOUND)
-    set(QT_QTCORE_LIBRARY Qt4::QtCore)
-    set(QT_QTTEST_LIBRARY Qt4::QtTest)
-    set(QT_QTNETWORK_LIBRARY Qt4::QtNetwork)
-endif()
-
 add_subdirectory(mozcerts)
 add_subdirectory(qcatool)

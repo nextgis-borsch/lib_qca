@@ -3,7 +3,7 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, <dmitry.baryshnikov@nextgis.com>
 ################################################################################
-# Copyright (C) 2017, NextGIS <info@nextgis.com>
+# Copyright (C) 2017-2020, NextGIS <info@nextgis.com>
 #
 # Changed script for NextGIS borsch purposes
 ################################################################################
@@ -67,51 +67,21 @@ endif(NOT BUILD_PLUGINS)
 
 # set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" )
 
-option(QT4_BUILD "Force building with Qt4 even if Qt5 is found")
-if (NOT QT4_BUILD)
-  # Do not automatically link Qt executables to qtmain target on Windows.
-  # QCA exucatables use console mode only. Not need to link against qtmain.lib.
-  set(Qt5_NO_LINK_QTMAIN ON)
-  find_anyproject(Qt5 REQUIRED COMPONENTS Core)
-endif()
+# Do not automatically link Qt executables to qtmain target on Windows.
+# QCA exucatables use console mode only. Not need to link against qtmain.lib.
+set(Qt5_NO_LINK_QTMAIN ON)
+find_anyproject(Qt5 REQUIRED COMPONENTS Core)
+string(SUBSTRING ${QT5_VERSION} 0 1 Qt5Core_VERSION_MAJOR)
+set(CMAKE_AUTOMOC ON)
+
 
 include(QcaMacro)
 include(GNUInstallDirs)
 
-if (Qt5Core_FOUND)
-  message(STATUS "Building with Qt5 support")
-  # Got from ECM
-  # Distros have no ECM. So I just copied required cmake modules.
-  find_anyproject(Qt5 REQUIRED COMPONENTS Network)
-  include(ECMQt4To5Porting)
-
-  # include(GNUInstallDirs)
-  setup_qt5_dirs()
-  set(QCA_QT_PC_VERSION "Qt5Core")
-  set(QCA_SUFFIX "qt5")
-else()
-  set(QT_MIN_VERSION "4.7.0")
-  set(QT_USE_IMPORTED_TARGETS ON)
-  # Do not automatically link Qt executables to qtmain target on Windows.
-  # QCA exucatables use console mode only. Not need to link against qtmain.lib.
-  set(QT4_NO_LINK_QTMAIN ON)
-  if(BUILD_TESTS)
-    find_anyproject(Qt4 REQUIRED COMPONENTS QtCore QtNetwork QtTest)
-  else(BUILD_TESTS)
-    find_anyproject(Qt4 REQUIRED COMPONENTS QtCore)
-  endif(BUILD_TESTS)
-  # WORKAROUND: Seems it must be done in Qt4 find module but didn't
-  mark_as_advanced(QT_QMAKE_EXECUTABLE)
-
-  # properly set up compile flags (QT_DEBUG/QT_NO_DEBUG, ...)
-  # include(${QT_USE_FILE})
-  # setup_qt4_dirs()
-  set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG>)
-  if(WIN32)
-      add_definitions(-DQT_DLL) # Only for shared libraries on win32
-  endif()
-  set(QCA_QT_PC_VERSION "QtCore")
-endif()
+set(Qt5Core_QMAKE_EXECUTABLE Qt5::qmake)
+setup_qt5_dirs()
+set(QCA_QT_PC_VERSION "Qt5Core")
+set(QCA_SUFFIX "qt5")
 
 # QCA can be shared but plugins will be static
 # if Qt is static.
@@ -149,7 +119,7 @@ elseif (APPLE)
  set(CMAKE_DEBUG_POSTFIX "_debug")
 endif (WIN32)
 
-if (CMAKE_COMPILER_IS_GNUCXX)
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
    if (CMAKE_SYSTEM_NAME MATCHES Linux)
      add_definitions (-D_DEFAULT_SOURCE)
      # on arm -Wcast-align throws many internal qt warning
@@ -160,10 +130,29 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 
      set ( CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -Wno-long-long -ansi -Wundef -Werror-implicit-function-declaration -Wchar-subscripts -Wall -W -Wpointer-arith -Wwrite-strings -Wformat-security -Wmissing-format-attribute -fno-common")
      set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wnon-virtual-dtor -Wno-long-long -ansi -Wundef -Wchar-subscripts -Wall -W -Wpointer-arith -Wwrite-strings -Wformat-security -fno-check-new -fno-common")
+	 
+	 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsuggest-override -Wlogical-op" )
+     endif()
    endif (CMAKE_SYSTEM_NAME MATCHES Linux)
-endif (CMAKE_COMPILER_IS_GNUCXX)
+endif (CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
-add_definitions (${QT_DEFINITIONS})
+add_definitions(-DQT_NO_CAST_TO_ASCII
+                -DQT_NO_URL_CAST_FROM_STRING
+                -DQT_NO_CAST_FROM_BYTEARRAY
+                -DQT_NO_SIGNALS_SLOTS_KEYWORDS
+                -DQT_USE_QSTRINGBUILDER
+                -DQT_NO_NARROWING_CONVERSIONS_IN_CONNECT)
+
+if (NOT WIN32)
+    # Strict iterators can't be used on Windows, they lead to a link error
+    # when application code iterates over a QVector<QPoint> for instance, unless
+    # Qt itself was also built with strict iterators.
+    # See example at https://bugreports.qt.io/browse/AUTOSUITE-946
+    add_definitions(-DQT_STRICT_ITERATORS
+	                -DQT_NO_CAST_FROM_ASCII)
+endif()
+				
 include_directories("include/QtCrypto/")
 # for generated files
 include_directories(${CMAKE_BINARY_DIR})
@@ -218,7 +207,7 @@ else( QCA_INSTALL_IN_QT_PREFIX )
   if(OSX_FRAMEWORK)
       set(LIB_INSTALL_DIR "Library/Frameworks" CACHE PATH "Directory where lib will install")
       # TODO: Qt major version
-      set(QCA_PLUGINS_INSTALL_DIR "Library/Plugins/Qt4" CACHE PATH "Directory where qca plugins will install")
+      set(QCA_PLUGINS_INSTALL_DIR "Library/Plugins/Qt5" CACHE PATH "Directory where qca plugins will install")
   else()
       set(LIB_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}" CACHE PATH "Directory where lib will install")
       set(QCA_PLUGINS_INSTALL_DIR "${LIB_INSTALL_DIR}/${QCA_LIB_NAME}" CACHE PATH "Directory where qca plugins will install")
@@ -352,8 +341,6 @@ else ( WIN32 )
   if ( DEFINED ENV{QC_CERTSTORE_PATH} )
     if(EXISTS $ENV{QC_CERTSTORE_PATH})
       set( qca_CERTSTORE $ENV{QC_CERTSTORE_PATH})
-    else(EXISTS $ENV{QC_CERTSTORE_PATH})
-      # path to try
     endif(EXISTS $ENV{QC_CERTSTORE_PATH})
   else( DEFINED ENV{QC_CERTSTORE_PATH} )
     set( toTry
@@ -409,7 +396,7 @@ set( public_HEADERS
 
 set( qca_HEADERS ${private_HEADERS} ${public_HEADERS} )
 
-include_directories(${QT_QTCORE_INCLUDE_DIR} "${qca_INCLUDEDIR}/QtCrypto")
+include_directories("${qca_INCLUDEDIR}/QtCrypto")
 
 configure_file("crypto.prf.cmake" "${CMAKE_BINARY_DIR}/mkspecs/features/crypto.prf" @ONLY)
 if(NOT DEVELOPER_MODE AND NOT OSX_FRAMEWORK)
@@ -535,16 +522,6 @@ if(NOT DEVELOPER_MODE)
     message("Pkg-config file will be installed to " "${PKGCONFIG_INSTALL_PREFIX}")
   endif()
   message("")
-
-  if(UNIX AND NOT APPLE)
-    if(NOT QCA_SUFFIX AND NOT QT4_BUILD)
-
-      message("${ESCAPE}[31mYou don't have QCA_SUFFIX set. Please note that the recommended way of")
-      message("building Qt5 version of qca for Linux distributions is to set")
-      message("QCA_SUFFIX to qt5 (-DQCA_SUFFIX=qt5).")
-      message("${ESCAPE}[0m")
-    endif()
-  endif()
 
   # install(EXPORT ${QCA_CONFIG_NAME_BASE}Targets DESTINATION ${QCA_LIBRARY_INSTALL_DIR}/cmake/${QCA_CONFIG_NAME_BASE} FILE ${QCA_CONFIG_NAME_BASE}Targets.cmake)
   # install(FILES

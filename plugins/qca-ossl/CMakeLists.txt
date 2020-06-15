@@ -49,8 +49,6 @@ if(OPENSSL_FOUND)
 
   set(QCA_OSSL_SOURCES qca-ossl.cpp)
 
-  my_automoc( QCA_OSSL_SOURCES )
-
   add_library(qca-ossl ${PLUGIN_TYPE} ${QCA_OSSL_SOURCES})
 
   if(OSX_FRAMEWORK)
@@ -77,7 +75,7 @@ if(OPENSSL_FOUND)
             ARCHIVE DESTINATION "${QCA_CRYPTO_INSTALL_DIR}"
             RUNTIME DESTINATION "${QCA_CRYPTO_INSTALL_DIR}")
 
-    install_pdb(qca-ossl ${QCA_CRYPTO_INSTALL_DIR})
+    #install_pdb(qca-ossl ${QCA_CRYPTO_INSTALL_DIR})
   endif()
 
   else(OPENSSL_FOUND)

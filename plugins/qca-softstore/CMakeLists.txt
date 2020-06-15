@@ -2,7 +2,6 @@
 
 enable_plugin("softstore")
 set(QCA_SOFTSTORE_SOURCES qca-softstore.cpp)
-my_automoc( QCA_SOFTSTORE_SOURCES )
 
 add_library(qca-softstore ${PLUGIN_TYPE} ${QCA_SOFTSTORE_SOURCES})
 
@@ -22,5 +21,5 @@ if(NOT DEVELOPER_MODE)
           ARCHIVE DESTINATION "${QCA_CRYPTO_INSTALL_DIR}"
           RUNTIME DESTINATION "${QCA_CRYPTO_INSTALL_DIR}")
 
-  install_pdb(qca-softstore ${QCA_CRYPTO_INSTALL_DIR})
+  #install_pdb(qca-softstore ${QCA_CRYPTO_INSTALL_DIR})
 endif()

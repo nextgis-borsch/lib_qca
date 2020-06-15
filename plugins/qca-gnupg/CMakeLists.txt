@@ -2,11 +2,9 @@
 
 enable_plugin("gnupg")
 
-set(QCA_GNUPG_MOC_SOURCES
+set(QCA_GNUPG_SOURCES
   qca-gnupg.cpp
-)
 
-set(QCA_GNUPG_NONMOC_SOURCES
   gpgop.cpp
   utils.cpp
   gpgproc/sprocess.cpp
@@ -38,19 +36,7 @@ set(QCA_GNUPG_HEADERS
   myopenpgpcontext.h
 )
 
-my_automoc(QCA_GNUPG_MOC_SOURCES)
-
-qt4_wrap_cpp(EXTRA_GNUPG_SOURCES gpgop.h)
-qt4_wrap_cpp(EXTRA_GNUPG_SOURCES gpgop_p.h)
-qt4_wrap_cpp(EXTRA_GNUPG_SOURCES gpgproc/gpgproc.h)
-qt4_wrap_cpp(EXTRA_GNUPG_SOURCES gpgproc/gpgproc_p.h)
-qt4_wrap_cpp(EXTRA_GNUPG_SOURCES gpgproc/sprocess.h)
-qt4_wrap_cpp(EXTRA_GNUPG_SOURCES ringwatch.h)
-qt4_wrap_cpp(EXTRA_GNUPG_SOURCES mykeystorelist.h)
-qt4_wrap_cpp(EXTRA_GNUPG_SOURCES mymessagecontext.h)
-qt4_wrap_cpp(EXTRA_GNUPG_SOURCES gpgaction.h)
-
-add_library(qca-gnupg ${PLUGIN_TYPE} ${QCA_GNUPG_MOC_SOURCES} ${QCA_GNUPG_NONMOC_SOURCES} ${EXTRA_GNUPG_SOURCES} ${QCA_GNUPG_HEADERS})
+add_library(qca-gnupg ${PLUGIN_TYPE} ${QCA_GNUPG_SOURCES} ${EXTRA_GNUPG_SOURCES} ${QCA_GNUPG_HEADERS})
 
 if(OSX_FRAMEWORK)
     set_target_properties(qca-gnupg PROPERTIES
@@ -73,5 +59,5 @@ if(NOT DEVELOPER_MODE)
           ARCHIVE DESTINATION "${QCA_CRYPTO_INSTALL_DIR}"
           RUNTIME DESTINATION "${QCA_CRYPTO_INSTALL_DIR}")
 
-  install_pdb(qca-gnupg ${QCA_CRYPTO_INSTALL_DIR})
+  #install_pdb(qca-gnupg ${QCA_CRYPTO_INSTALL_DIR})
 endif()

@@ -8,9 +8,6 @@ if(NSS_FOUND)
   enable_plugin("nss")
 
   set(QCA_NSS_SOURCES qca-nss.cpp)
-  add_definitions(${NSS_CFLAGS_OTHER})
-  include_directories(${NSS_INCLUDE_DIRS})
-  my_automoc( QCA_NSS_SOURCES )
   add_library(qca-nss ${PLUGIN_TYPE} ${QCA_NSS_SOURCES})
 
   set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${NSS_LDFLAGS})
@@ -28,7 +25,7 @@ if(NSS_FOUND)
             ARCHIVE DESTINATION "${QCA_CRYPTO_INSTALL_DIR}"
             RUNTIME DESTINATION "${QCA_CRYPTO_INSTALL_DIR}")
 
-    install_pdb(qca-nss ${QCA_CRYPTO_INSTALL_DIR})
+    #install_pdb(qca-nss ${QCA_CRYPTO_INSTALL_DIR})
   endif()
 else(NSS_FOUND)
   disable_plugin("nss")

@@ -28,20 +28,19 @@ endif()
 # base source files
 
 
-SET( nonmoc_SOURCES
+SET( SOURCES
 	qca_tools.cpp
 	qca_plugin.cpp
 	qca_textfilter.cpp
 	qca_basic.cpp
 	support/logger.cpp
-)
 
-SET( moc_SOURCES
 	qca_cert.cpp
 	qca_core.cpp
 	qca_default.cpp
 	qca_keystore.cpp
 	qca_publickey.cpp
+	qca_safeobj.cpp
 	qca_safetimer.cpp
 	qca_securelayer.cpp
 	qca_securemessage.cpp
@@ -53,11 +52,11 @@ SET( moc_SOURCES
 )
 
 IF (WIN32)
-  SET( nonmoc_SOURCES ${nonmoc_SOURCES} qca_systemstore_win.cpp )
+  SET( SOURCES ${SOURCES} qca_systemstore_win.cpp )
 elseif(APPLE)
-  set( nonmoc_SOURCES ${nonmoc_SOURCES} qca_systemstore_mac.cpp)
+  set( SOURCES ${SOURCES} qca_systemstore_mac.cpp)
 else()
-  SET( nonmoc_SOURCES ${nonmoc_SOURCES} qca_systemstore_flatfile.cpp )
+  SET( SOURCES ${SOURCES} qca_systemstore_flatfile.cpp )
 endif()
 
 # Support files
@@ -67,7 +66,7 @@ endif()
 SET( botan_BASE botantools/botan )
 
 
-INCLUDE_DIRECTORIES(${QT_QTCORE_INCLUDE_DIR} support ${botan_BASE} )
+INCLUDE_DIRECTORIES(support ${botan_BASE} )
 
 ADD_DEFINITIONS(
 	-DBOTAN_TYPES_QT
@@ -125,9 +124,6 @@ IF(WIN32)
   add_definitions(-DQ_OS_WIN)
 ENDIF(WIN32)
 
-MY_AUTOMOC( moc_SOURCES )
-SET( SOURCES ${SOURCES} ${moc_SOURCES} ${nonmoc_SOURCES} )
-
 SET( SOURCES ${SOURCES} ${botan_SOURCES})
 
 if(OSX_FRAMEWORK)
@@ -139,18 +135,6 @@ if(OSX_FRAMEWORK)
         ${CMAKE_BINARY_DIR}/share/man/man1/${QCA_TOOL_NAME}.1
     )
 endif()
-
-qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qca_core.h")
-qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qca_cert.h")
-qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qca_keystore.h")
-qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qcaprovider.h")
-qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qca_publickey.h")
-qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qca_securelayer.h")
-qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qca_securemessage.h")
-qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qca_support.h")
-qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qpipe.h")
-qt4_wrap_cpp( SOURCES "qca_safeobj.h")
-qt4_wrap_cpp( SOURCES "${qca_INCLUDEDIR}/QtCrypto/qca_safetimer.h")
 
 add_library(${QCA_LIB_NAME} ${SOURCES}  ${public_HEADERS} )
 
@@ -171,7 +155,8 @@ if(APPLE)
 endif(APPLE)
 
 
-target_link_extlibraries(${QCA_LIB_NAME})
+target_link_libraries(${QCA_LIB_NAME} PUBLIC Qt5::Core PRIVATE ${TARGET_LINK_LIB})
+
 set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${QCA_LIB_NAME} PARENT_SCOPE)
 
 if(OSX_FRAMEWORK)
@@ -220,7 +205,7 @@ if(NOT DEVELOPER_MODE)
           FRAMEWORK DESTINATION "${QCA_LIBRARY_INSTALL_DIR}"
           PUBLIC_HEADER DESTINATION "${QCA_FULL_INCLUDE_INSTALL_DIR}" INCLUDES DESTINATION "${QCA_FULL_INCLUDE_INSTALL_DIR}"
   )
-  install_pdb(${QCA_LIB_NAME} ${QCA_BINARY_INSTALL_DIR})
+  #install_pdb(${QCA_LIB_NAME} ${QCA_BINARY_INSTALL_DIR})
 endif()
 
 if(NOT DEVELOPER_MODE)

@@ -11,7 +11,6 @@ endif(WITH_pkcs11_PLUGIN STREQUAL "yes")
 if(OPENSSL_FOUND AND PKCS11H_FOUND)
   enable_plugin("pkcs11")
   set(QCA_PKCS11_SOURCES qca-pkcs11.cpp)
-  my_automoc( QCA_PKCS11_SOURCES )
 
   add_library(qca-pkcs11 ${PLUGIN_TYPE} ${QCA_PKCS11_SOURCES})
 
@@ -37,7 +36,7 @@ if(OPENSSL_FOUND AND PKCS11H_FOUND)
             ARCHIVE DESTINATION "${QCA_CRYPTO_INSTALL_DIR}"
             RUNTIME DESTINATION "${QCA_CRYPTO_INSTALL_DIR}")
 
-    install_pdb(qca-pkcs11 ${QCA_CRYPTO_INSTALL_DIR})
+    #install_pdb(qca-pkcs11 ${QCA_CRYPTO_INSTALL_DIR})
   endif()
 else(OPENSSL_FOUND AND PKCS11H_FOUND)
   disable_plugin("pkcs11")
