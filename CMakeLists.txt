@@ -410,12 +410,7 @@ endif()
 
 set(QCA_CRYPTO_INSTALL_DIR "${QCA_PLUGINS_INSTALL_DIR}/crypto")
 
-if(QCA_SUFFIX)
-  set(PACKAGE_NAME ${PROJECT_NAME}-${QCA_SUFFIX})
-else(QCA_SUFFIX)
-  set(PACKAGE_NAME ${PROJECT_NAME})
-endif(QCA_SUFFIX)
-
+set(PACKAGE_NAME ${PROJECT_NAME})
 string(TOUPPER ${PACKAGE_NAME} PACKAGE_UPPER_NAME)
 
 ################################################################################
