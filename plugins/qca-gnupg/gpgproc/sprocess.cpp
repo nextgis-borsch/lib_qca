@@ -20,8 +20,8 @@
 #include "sprocess.h"
 
 #ifdef Q_OS_UNIX
-# include <unistd.h>
-# include <fcntl.h>
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 namespace gpgQCAPlugin {
@@ -30,8 +30,15 @@ namespace gpgQCAPlugin {
 // SProcess
 //----------------------------------------------------------------------------
 SProcess::SProcess(QObject *parent)
-:QProcess(parent)
+    : QProcess(parent)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    setChildProcessModifier([this]() {
+        // set the pipes to be inheritable
+        for (int n = 0; n < pipeList.count(); ++n)
+            ::fcntl(pipeList[n], F_SETFD, (::fcntl(pipeList[n], F_GETFD) & ~FD_CLOEXEC));
+    });
+#endif
 }
 
 SProcess::~SProcess()
@@ -41,15 +48,17 @@ SProcess::~SProcess()
 #ifdef Q_OS_UNIX
 void SProcess::setInheritPipeList(const QList<int> &list)
 {
-	pipeList = list;
+    pipeList = list;
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 void SProcess::setupChildProcess()
 {
-	// set the pipes to be inheritable
-	for(int n = 0; n < pipeList.count(); ++n)
-		::fcntl(pipeList[n], F_SETFD, (::fcntl(pipeList[n], F_GETFD) & ~FD_CLOEXEC));
+    // set the pipes to be inheritable
+    for (int n = 0; n < pipeList.count(); ++n)
+        ::fcntl(pipeList[n], F_SETFD, (::fcntl(pipeList[n], F_GETFD) & ~FD_CLOEXEC));
 }
+#endif
 #endif
 
 }
