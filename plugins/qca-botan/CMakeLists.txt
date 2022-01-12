@@ -1,15 +1,14 @@
 if(WITH_botan_PLUGIN STREQUAL "yes")
   find_package(Botan REQUIRED)
-else(WITH_botan_PLUGIN STREQUAL "yes")
+else()
   find_package(Botan)
-endif(WITH_botan_PLUGIN STREQUAL "yes")
+endif()
 
 if(BOTAN_FOUND)
   enable_plugin("botan")
 
   set(QCA_BOTAN_SOURCES qca-botan.cpp)
   add_definitions(${BOTAN_CFLAGS})
-  my_automoc(QCA_BOTAN_SOURCES)
   add_library(qca-botan ${PLUGIN_TYPE} ${QCA_BOTAN_SOURCES})
 
   if(OSX_FRAMEWORK)
@@ -30,6 +29,6 @@ if(BOTAN_FOUND)
     install_pdb(qca-botan ${QCA_CRYPTO_INSTALL_DIR})
   endif()
 
-else(BOTAN_FOUND)
+else()
   disable_plugin("botan")
-endif(BOTAN_FOUND)
+endif()

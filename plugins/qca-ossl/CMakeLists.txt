@@ -78,6 +78,6 @@ if(OPENSSL_FOUND)
     #install_pdb(qca-ossl ${QCA_CRYPTO_INSTALL_DIR})
   endif()
 
-  else(OPENSSL_FOUND)
+  else()
   disable_plugin("ossl")
-endif(OPENSSL_FOUND)
+endif()

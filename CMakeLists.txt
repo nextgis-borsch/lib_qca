@@ -39,8 +39,8 @@ if(OSX_FRAMEWORK)
     set(CMAKE_MACOSX_RPATH ON)
 endif()
 
-if(POLICY CMP0042)
-  cmake_policy(SET CMP0042 OLD)
+if(POLICY CMP0068)
+  cmake_policy(SET CMP0068 NEW)
 endif()
 
 option(BUILD_TESTS "Create test" ON)
@@ -79,7 +79,7 @@ include(QcaMacro)
 include(GNUInstallDirs)
 
 set(Qt5Core_QMAKE_EXECUTABLE Qt5::qmake)
-setup_qt5_dirs()
+setup_qt_dirs()
 set(QCA_QT_PC_VERSION "Qt5Core")
 set(QCA_SUFFIX "qt5")
 
