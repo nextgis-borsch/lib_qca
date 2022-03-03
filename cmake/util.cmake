@@ -29,7 +29,7 @@ function(check_version major minor rev)
     set(CHECK_FILE ${CMAKE_CURRENT_SOURCE_DIR}/include/QtCrypto/qca_core.h)
     set(MAJOR_VERSION 2)
     set(MINOR_VERSION 3)
-    set(REV_VERSION 3)
+    set(REV_VERSION 4)
 
     set(${major} ${MAJOR_VERSION} PARENT_SCOPE)
     set(${minor} ${MINOR_VERSION} PARENT_SCOPE)
@@ -135,6 +135,9 @@ function(get_compiler_version ver)
             set(COMPILER "${COMPILER}-64bit")
         endif()
     endif()
+
+    # Debug
+    # set(COMPILER Clang-10.0)
 
     set(${ver} ${COMPILER} PARENT_SCOPE)
 endfunction()

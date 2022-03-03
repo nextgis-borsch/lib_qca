@@ -3,11 +3,12 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, <dmitry.baryshnikov@nextgis.com>
 ################################################################################
-# Copyright (C) 2017-2020, NextGIS <info@nextgis.com>
+# Copyright (C) 2017-2022, NextGIS <info@nextgis.com>
 #
 # Changed script for NextGIS borsch purposes
 ################################################################################
 
+cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 # Checking for user explicity defined CMAKE_INSTALL_PREFIX
 # It must be done before project(...)
 if(NOT CMAKE_INSTALL_PREFIX)
@@ -18,11 +19,11 @@ endif(NOT CMAKE_INSTALL_PREFIX)
 
 project(qca)
 
-if(NOT APPLE)
-  cmake_minimum_required(VERSION 2.8.12)
-else()
-  cmake_minimum_required(VERSION 3.0)
-endif()
+# if(NOT APPLE)
+#   cmake_minimum_required(VERSION 2.8.12)
+# else()
+#   cmake_minimum_required(VERSION 3.0)
+# endif()
 
 # Some init settings
 set(CMAKE_COLOR_MAKEFILE ON)
@@ -81,7 +82,7 @@ include(GNUInstallDirs)
 set(Qt5Core_QMAKE_EXECUTABLE Qt5::qmake)
 setup_qt_dirs()
 set(QCA_QT_PC_VERSION "Qt5Core")
-set(QCA_SUFFIX "qt5")
+# set(QCA_SUFFIX "qt5") - disable suffix for qca.dll/qca.framework
 
 # QCA can be shared but plugins will be static
 # if Qt is static.

@@ -1,6 +1,6 @@
 
-MACRO(setup_qt_dirs)
-  if(BUILD_WITH_QT6)
+MACRO(SETUP_QT_DIRS)
+  if(QT6)
     GET_TARGET_PROPERTY(QMAKE_EXECUTABLE Qt6::qmake LOCATION)
   else()
     GET_TARGET_PROPERTY(QMAKE_EXECUTABLE ${Qt5Core_QMAKE_EXECUTABLE} LOCATION)
@@ -14,7 +14,7 @@ MACRO(setup_qt_dirs)
   EXEC_PROGRAM( ${QMAKE_EXECUTABLE} ARGS "-query QT_INSTALL_DATA" OUTPUT_VARIABLE QT_DATA_DIR )
   EXEC_PROGRAM( ${QMAKE_EXECUTABLE} ARGS "-query QT_HOST_DATA" OUTPUT_VARIABLE QT_ARCHDATA_DIR )
   SET( QT_MKSPECS_DIR "${QT_ARCHDATA_DIR}/mkspecs" )
-ENDMACRO()
+ENDMACRO(SETUP_QT_DIRS)
 
 macro(set_enabled_plugin PLUGIN ENABLED)
   # To nice looks
@@ -54,7 +54,11 @@ endmacro(target_link_qca_libraries)
 # it used to build unittests
 macro(target_link_qca_test_libraries TARGET)
   target_link_qca_libraries(${TARGET})
-  target_link_libraries(${TARGET} Qt${QT_MAJOR_VERSION}::Test)
+  if(QT6)
+    target_link_libraries(${TARGET} Qt6::Test)
+  else()
+    target_link_libraries(${TARGET} Qt5::Test)
+  endif()
 endmacro(target_link_qca_test_libraries)
 
 # it used to build unittests
@@ -66,8 +70,13 @@ endmacro(add_qca_test)
 
 macro(install_pdb TARGET INSTALL_PATH)
   if(MSVC)
-    install(FILES $<TARGET_PDB_FILE:${TARGET}> DESTINATION ${INSTALL_PATH} CONFIGURATIONS Debug)
-    install(FILES $<TARGET_PDB_FILE:${TARGET}> DESTINATION ${INSTALL_PATH} CONFIGURATIONS RelWithDebInfo)
+    get_target_property(LOCATION ${TARGET} LOCATION_DEBUG)
+    string(REGEX REPLACE "\\.[^.]*$" ".pdb" LOCATION "${LOCATION}")
+    install(FILES ${LOCATION} DESTINATION ${INSTALL_PATH} CONFIGURATIONS Debug)
+
+    get_target_property(LOCATION ${TARGET} LOCATION_RELWITHDEBINFO)
+    string(REGEX REPLACE "\\.[^.]*$" ".pdb" LOCATION "${LOCATION}")
+    install(FILES ${LOCATION} DESTINATION ${INSTALL_PATH} CONFIGURATIONS RelWithDebInfo)
   endif()
 endmacro(install_pdb)
 
